@@ -15,7 +15,6 @@
             android:name=".ui.finance.FinanceActivity"
             android:exported="false" />
         <activity
-            android:name=".ui.MainActivity"
             android:name=".HRActivity"
             android:exported="false"
             android:label="@string/title_activity_child"

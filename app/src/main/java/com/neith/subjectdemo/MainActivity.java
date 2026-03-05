@@ -8,6 +8,9 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.neith.subjectdemo.data.SharedPrefsManager;
+import com.neith.subjectdemo.ui.finance.FinanceActivity;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -27,10 +30,20 @@ public class MainActivity extends AppCompatActivity {
         Button btnHR = findViewById(R.id.btnHR);
         Button btnFinance = findViewById(R.id.btnFinance);
         Button btnExit = findViewById(R.id.btnExit);
+
         btnHR.setOnClickListener(v ->
                 startActivity(new Intent(this, HRActivity.class)));
-        btnFinance.setOnClickListener(v ->
-                Toast.makeText(this, "Chức năng tài chính đang phát triển", Toast.LENGTH_SHORT).show());
+
+        btnFinance.setOnClickListener(v -> {
+            SharedPrefsManager prefsManager = new SharedPrefsManager(this);
+            prefsManager.setUserRole(SharedPrefsManager.ROLE_FINANCE);
+
+            Toast.makeText(this, "Đang vào hệ thống Tài chính...", Toast.LENGTH_SHORT).show();
+
+            Intent intent = new Intent(MainActivity.this, FinanceActivity.class);
+            startActivity(intent);
+        });
+
         btnExit.setOnClickListener(v -> finishAffinity());
     }
 
