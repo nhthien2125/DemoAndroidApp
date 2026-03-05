@@ -12,7 +12,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SubjectDemo">
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.finance.FinanceActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
