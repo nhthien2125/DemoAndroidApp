@@ -1,4 +1,4 @@
-package com.neith.subjectdemo;
+package com.neith.subjectdemo.hr;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,6 +8,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.neith.subjectdemo.R;
 
 import java.util.ArrayList;
 

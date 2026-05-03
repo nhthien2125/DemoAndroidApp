@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -12,12 +14,51 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SubjectDemo">
         <activity
-            android:name=".HRActivity"
+            android:name=".hr.ProjectDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".hr.DepartmentDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".hr.EmployeeProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".hr.WorkScheduleActivity"
+            android:exported="false" />
+        <activity
+            android:name=".hr.ProjectActivity"
+            android:exported="false" />
+        <activity
+            android:name=".hr.EmployeeActivity"
+            android:exported="false" />
+        <activity
+            android:name=".hr.DepartmentActivity"
+            android:exported="false" />
+        <activity
+            android:name=".auth.ResetPasswordActivity"
+            android:exported="false" />
+        <activity
+            android:name=".auth.VerifyOtpActivity"
+            android:exported="false" />
+        <activity
+            android:name=".auth.ForgotPassword"
+            android:exported="false" />
+        <activity
+            android:name=".auth.SignUp"
+            android:exported="false" />
+        <activity
+            android:name=".fn.FNActivity"
+            android:exported="false" />
+        <activity
+            android:name=".admin.AdminActivity"
+            android:exported="false" />
+        <activity
+            android:name=".hr.HRActivity"
             android:exported="false"
             android:label="@string/title_activity_child"
             android:theme="@style/Theme.SubjectDemo" />
         <activity
-            android:name=".MainActivity"
+            android:name=".auth.SignIn"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

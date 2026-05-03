@@ -32,9 +32,21 @@ android {
     buildFeatures {
         compose true
     }
+    packaging {
+        resources {
+            pickFirsts += [
+                    "META-INF/NOTICE.md",
+                    "META-INF/LICENSE.md",
+                    "META-INF/NOTICE",
+                    "META-INF/LICENSE"
+            ]
+        }
+    }
 }
 
 dependencies {
+    implementation libs.android.mail
+    implementation libs.android.activation
     implementation libs.appcompat
     implementation libs.material
     implementation libs.activity

@@ -1,4 +1,4 @@
-package com.neith.subjectdemo;
+package com.neith.subjectdemo.hr;
 
 public class NhanVien {
     String ma, ho, ten;

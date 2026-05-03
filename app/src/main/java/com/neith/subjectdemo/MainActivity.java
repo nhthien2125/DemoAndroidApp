@@ -8,6 +8,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.neith.subjectdemo.hr.HRActivity;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -15,7 +17,7 @@ import java.io.OutputStream;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String DATABASE_NAME = "QLNSVATC_v2.db";
+    private static final String DATABASE_NAME = "QLNSVATC_F.db";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
