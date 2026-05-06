@@ -1,14 +1,18 @@
 package com.neith.subjectdemo.hr;
 
+import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.Gravity;
@@ -20,7 +24,9 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -29,13 +35,17 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.neith.subjectdemo.R;
+import com.neith.subjectdemo.helper.ActivityLogger;
 import com.neith.subjectdemo.helper.BottomNav;
 import com.neith.subjectdemo.helper.DB;
 
+import java.io.File;
+import java.io.InputStream;
 import java.text.Normalizer;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Random;
@@ -51,7 +61,7 @@ public class EmployeeActivity extends AppCompatActivity {
 
     EditText edtSearchEmployee;
     Spinner spnDepartment, spnPosition, spnType;
-    Button btnFilter, btnReset, btnAddEmployee;
+    Button btnFilter, btnReset, btnAddEmployee, btnCandidate;
 
     ArrayList<OptionItem> departments = new ArrayList<>();
     ArrayList<OptionItem> positions = new ArrayList<>();
@@ -93,10 +103,12 @@ public class EmployeeActivity extends AppCompatActivity {
         btnFilter = findViewById(R.id.btnFilter);
         btnReset = findViewById(R.id.btnReset);
         btnAddEmployee = findViewById(R.id.btnAddEmployee);
+        btnCandidate = findViewById(R.id.btnCandidate);
 
         btnFilter.setBackgroundTintList(null);
         btnReset.setBackgroundTintList(null);
         btnAddEmployee.setBackgroundTintList(null);
+        btnCandidate.setBackgroundTintList(null);
 
         layoutFilterContent.setVisibility(View.GONE);
         txtFilterArrow.setText("▼");
@@ -112,6 +124,12 @@ public class EmployeeActivity extends AppCompatActivity {
         btnFilter.setOnClickListener(v -> loadEmployees());
         btnReset.setOnClickListener(v -> resetFilters());
         btnAddEmployee.setOnClickListener(v -> showAddEmployeeDialog());
+
+        btnCandidate.setOnClickListener(v -> {
+            Intent intent = new Intent(EmployeeActivity.this, CandidateActivity.class);
+            startActivity(intent);
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+        });
 
         loadEmployees();
     }
@@ -217,14 +235,9 @@ public class EmployeeActivity extends AppCompatActivity {
     }
 
     private void setupSpinners() {
-        SpinnerTextAdapter<OptionItem> deptAdapter = new SpinnerTextAdapter<>(departments);
-        spnDepartment.setAdapter(deptAdapter);
-
-        SpinnerTextAdapter<OptionItem> posAdapter = new SpinnerTextAdapter<>(positions);
-        spnPosition.setAdapter(posAdapter);
-
-        SpinnerTextAdapter<String> typeAdapter = new SpinnerTextAdapter<>(types);
-        spnType.setAdapter(typeAdapter);
+        spnDepartment.setAdapter(new WhiteSpinnerAdapter<>(departments));
+        spnPosition.setAdapter(new WhiteSpinnerAdapter<>(positions));
+        spnType.setAdapter(new WhiteSpinnerAdapter<>(types));
 
         spnDepartment.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -260,40 +273,36 @@ public class EmployeeActivity extends AppCompatActivity {
         });
     }
 
-    class SpinnerTextAdapter<T> extends ArrayAdapter<T> {
+    class WhiteSpinnerAdapter<T> extends ArrayAdapter<T> {
 
-        SpinnerTextAdapter(ArrayList<T> data) {
+        WhiteSpinnerAdapter(ArrayList<T> data) {
             super(EmployeeActivity.this, android.R.layout.simple_spinner_item, data);
             setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         }
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
-            TextView tv = makeSpinnerText(getItem(position));
-            tv.setTextColor(TEXT);
-            tv.setBackgroundColor(Color.TRANSPARENT);
+            TextView tv = new TextView(EmployeeActivity.this);
+            tv.setText(getItem(position) == null ? "" : getItem(position).toString());
+            tv.setTextColor(Color.WHITE);
+            tv.setTextSize(15);
             tv.setPadding(dp(14), 0, dp(14), 0);
             tv.setGravity(Gravity.CENTER_VERTICAL);
+            tv.setSingleLine(false);
+            tv.setBackgroundColor(Color.TRANSPARENT);
             return tv;
         }
 
         @Override
         public View getDropDownView(int position, View convertView, ViewGroup parent) {
-            TextView tv = makeSpinnerText(getItem(position));
-            tv.setTextColor(TEXT);
-            tv.setBackgroundColor(Color.parseColor("#111827"));
+            TextView tv = new TextView(EmployeeActivity.this);
+            tv.setText(getItem(position) == null ? "" : getItem(position).toString());
+            tv.setTextColor(Color.WHITE);
+            tv.setTextSize(15);
             tv.setPadding(dp(16), dp(16), dp(16), dp(16));
             tv.setGravity(Gravity.CENTER_VERTICAL);
-            return tv;
-        }
-
-        private TextView makeSpinnerText(T item) {
-            TextView tv = new TextView(EmployeeActivity.this);
-            tv.setText(item == null ? "" : item.toString());
-            tv.setTextSize(15);
             tv.setSingleLine(false);
-            tv.setTextColor(TEXT);
-            tv.setTypeface(null, Typeface.NORMAL);
+            tv.setBackgroundColor(Color.parseColor("#111827"));
             return tv;
         }
     }
@@ -326,7 +335,7 @@ public class EmployeeActivity extends AppCompatActivity {
         sql.append("IFNULL(CV.TENCV, '(Chưa gán)') AS TENCV, ");
         sql.append("IFNULL(L.LOAINV, '') AS LOAINV, ");
         sql.append("IFNULL(L.LUONGCOBAN, 0) AS LUONGCOBAN, ");
-        sql.append("NV.MAPB, NV.MACV ");
+        sql.append("NV.MAPB, NV.MACV, IFNULL(NV.ANH, '') AS ANH ");
         sql.append("FROM NHANVIEN NV ");
         sql.append("LEFT JOIN PHONGBAN PB ON NV.MAPB = PB.MAPB ");
         sql.append("LEFT JOIN VITRICONGVIEC CV ON NV.MACV = CV.MACV ");
@@ -377,6 +386,7 @@ public class EmployeeActivity extends AppCompatActivity {
                 item.luongCoBan = c.getDouble(7);
                 item.maPB = c.getString(8);
                 item.maCV = c.getString(9);
+                item.anh = c.getString(10);
 
                 layoutEmployeeList.addView(makeEmployeeCard(item));
             }
@@ -404,7 +414,7 @@ public class EmployeeActivity extends AppCompatActivity {
         top.setOrientation(LinearLayout.HORIZONTAL);
         top.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView avatar = makeAvatar(item);
+        View avatar = makeAvatar(item);
         top.addView(avatar);
 
         LinearLayout info = new LinearLayout(this);
@@ -484,15 +494,91 @@ public class EmployeeActivity extends AppCompatActivity {
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
     }
 
-    private TextView makeAvatar(EmployeeItem item) {
+    private View makeAvatar(EmployeeItem item) {
+        FrameLayout frame = new FrameLayout(this);
+
+        LinearLayout.LayoutParams frameLp = new LinearLayout.LayoutParams(dp(52), dp(52));
+        frame.setLayoutParams(frameLp);
+
+        ImageView image = new ImageView(this);
+        image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        image.setBackgroundResource(R.drawable.employee_avatar_bg);
+
+        FrameLayout.LayoutParams imageLp = new FrameLayout.LayoutParams(dp(52), dp(52));
+        imageLp.gravity = Gravity.CENTER;
+        image.setLayoutParams(imageLp);
+
+        boolean hasImage = loadEmployeeImageIntoView(image, item.anh);
+
+        if (hasImage) {
+            frame.addView(image);
+            return frame;
+        }
+
         TextView avatar = makeText(getInitial(item.hoTen), 18, Color.BLACK, true);
         avatar.setGravity(Gravity.CENTER);
         avatar.setBackgroundResource(R.drawable.employee_avatar_bg);
 
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(48), dp(48));
-        avatar.setLayoutParams(lp);
+        FrameLayout.LayoutParams textLp = new FrameLayout.LayoutParams(dp(52), dp(52));
+        textLp.gravity = Gravity.CENTER;
+        avatar.setLayoutParams(textLp);
 
-        return avatar;
+        frame.addView(avatar);
+        return frame;
+    }
+
+    private boolean loadEmployeeImageIntoView(ImageView imageView, String imagePath) {
+        if (imagePath == null || imagePath.trim().isEmpty() || imagePath.equalsIgnoreCase("null")) {
+            return false;
+        }
+
+        String fileName = imagePath.trim();
+
+        if (fileName.contains("/")) {
+            fileName = fileName.substring(fileName.lastIndexOf("/") + 1);
+        }
+
+        try {
+            File folder = getExternalFilesDir("AnhNhanVien");
+
+            if (folder != null) {
+                File file = new File(folder, fileName);
+
+                if (file.exists()) {
+                    imageView.setImageURI(Uri.fromFile(file));
+                    return true;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        try {
+            InputStream inputStream = getAssets().open("AnhNhanVien/" + fileName);
+            Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+            inputStream.close();
+
+            if (bitmap != null) {
+                imageView.setImageBitmap(bitmap);
+                return true;
+            }
+
+        } catch (Exception ignored) {
+        }
+
+        try {
+            InputStream inputStream = getAssets().open(imagePath.trim());
+            Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+            inputStream.close();
+
+            if (bitmap != null) {
+                imageView.setImageBitmap(bitmap);
+                return true;
+            }
+
+        } catch (Exception ignored) {
+        }
+
+        return false;
     }
 
     private TextView makeTag(String text) {
@@ -574,17 +660,8 @@ public class EmployeeActivity extends AppCompatActivity {
         Spinner deptSpinner = makeDarkSpinner();
         Spinner posSpinner = makeDarkSpinner();
 
-        deptSpinner.setAdapter(new ArrayAdapter<>(
-                this,
-                android.R.layout.simple_spinner_dropdown_item,
-                departments
-        ));
-
-        posSpinner.setAdapter(new ArrayAdapter<>(
-                this,
-                android.R.layout.simple_spinner_dropdown_item,
-                positions
-        ));
+        deptSpinner.setAdapter(new WhiteSpinnerAdapter<>(departments));
+        posSpinner.setAdapter(new WhiteSpinnerAdapter<>(positions));
 
         deptSpinner.setSelection(findOptionIndex(departments, item.maPB));
         posSpinner.setSelection(findOptionIndex(positions, item.maCV));
@@ -820,6 +897,7 @@ public class EmployeeActivity extends AppCompatActivity {
         values.put("NGAY", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date()));
         values.put("HINHTHUC", reward ? "KT" : "KL");
         values.put("SOTIEN", amount);
+        values.put("HESOTIEN", 1);
         values.put("TONG", amount);
 
         long result = db.insert("DSTHUONGPHAT", null, values);
@@ -915,9 +993,22 @@ public class EmployeeActivity extends AppCompatActivity {
         content.setOrientation(LinearLayout.VERTICAL);
 
         EditText edtHoLot = makeDarkInput("Họ lót");
+        edtHoLot.setInputType(
+                InputType.TYPE_CLASS_TEXT
+                        | InputType.TYPE_TEXT_VARIATION_PERSON_NAME
+                        | InputType.TYPE_TEXT_FLAG_CAP_WORDS
+        );
+
         EditText edtTen = makeDarkInput("Tên");
-        EditText edtNamSinh = makeDarkInput("Năm sinh");
-        edtNamSinh.setInputType(InputType.TYPE_CLASS_NUMBER);
+        edtTen.setInputType(
+                InputType.TYPE_CLASS_TEXT
+                        | InputType.TYPE_TEXT_VARIATION_PERSON_NAME
+                        | InputType.TYPE_TEXT_FLAG_CAP_WORDS
+        );
+
+        EditText edtNamSinh = makeDarkInput("Chọn năm sinh");
+        setupDateInput(edtNamSinh);
+        edtNamSinh.setOnClickListener(v -> showBirthYearPicker(edtNamSinh));
 
         EditText edtSalary = makeDarkInput("Lương cơ bản");
         edtSalary.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
@@ -928,25 +1019,13 @@ public class EmployeeActivity extends AppCompatActivity {
         genders.add("Nam");
         genders.add("Nữ");
 
-        spnGender.setAdapter(new ArrayAdapter<>(
-                this,
-                android.R.layout.simple_spinner_dropdown_item,
-                genders
-        ));
+        spnGender.setAdapter(new WhiteSpinnerAdapter<>(genders));
 
         Spinner spnDept = makeDarkSpinner();
-        spnDept.setAdapter(new ArrayAdapter<>(
-                this,
-                android.R.layout.simple_spinner_dropdown_item,
-                departments
-        ));
+        spnDept.setAdapter(new WhiteSpinnerAdapter<>(departments));
 
         Spinner spnPos = makeDarkSpinner();
-        spnPos.setAdapter(new ArrayAdapter<>(
-                this,
-                android.R.layout.simple_spinner_dropdown_item,
-                positions
-        ));
+        spnPos.setAdapter(new WhiteSpinnerAdapter<>(positions));
 
         content.addView(makeDialogLabel("Họ lót"));
         content.addView(edtHoLot);
@@ -1002,8 +1081,18 @@ public class EmployeeActivity extends AppCompatActivity {
                 return;
             }
 
+            if (!isValidVietnameseName(hoLot)) {
+                Toast.makeText(this, "Họ lót chỉ được chứa chữ cái tiếng Việt và khoảng trắng.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (!isValidVietnameseName(ten)) {
+                Toast.makeText(this, "Tên chỉ được chứa chữ cái tiếng Việt.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             if (namSinhStr.isEmpty()) {
-                Toast.makeText(this, "Vui lòng nhập năm sinh.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Vui lòng chọn năm sinh.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -1029,12 +1118,11 @@ public class EmployeeActivity extends AppCompatActivity {
                 return;
             }
 
-            int currentYear = Integer.parseInt(
-                    new SimpleDateFormat("yyyy", Locale.getDefault()).format(new Date())
-            );
+            int currentYear = getCurrentYear();
+            int maxBirthYear = currentYear - 18;
 
-            if (namSinh < 1950 || namSinh > currentYear) {
-                Toast.makeText(this, "Năm sinh không hợp lệ.", Toast.LENGTH_SHORT).show();
+            if (namSinh < 1950 || namSinh > maxBirthYear) {
+                Toast.makeText(this, "Năm sinh phải từ 1950 đến " + maxBirthYear + ".", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -1079,6 +1167,7 @@ public class EmployeeActivity extends AppCompatActivity {
             nvValues.put("NAMSINH", namSinh);
             nvValues.put("MAPB", maPB);
             nvValues.put("MACV", maCV);
+            nvValues.put("ANH", "");
 
             long nvResult = db.insert("NHANVIEN", null, nvValues);
 
@@ -1102,7 +1191,7 @@ public class EmployeeActivity extends AppCompatActivity {
             }
 
             db.setTransactionSuccessful();
-
+            ActivityLogger.log(db, "CREATE_EMPLOYEE", "HR", "Đã thêm nhân viên: " + maNV + " - " + hoLot + " " + ten + " vào phòng " + maPB);
             Toast.makeText(this, "Đã thêm nhân viên: " + maNV, Toast.LENGTH_SHORT).show();
 
         } catch (Exception e) {
@@ -1181,6 +1270,76 @@ public class EmployeeActivity extends AppCompatActivity {
         btn.setLayoutParams(lp);
 
         return btn;
+    }
+
+    private void setupDateInput(EditText editText) {
+        editText.setFocusable(false);
+        editText.setFocusableInTouchMode(false);
+        editText.setClickable(true);
+        editText.setInputType(InputType.TYPE_NULL);
+    }
+
+    private void showBirthYearPicker(EditText target) {
+        Calendar calendar = Calendar.getInstance();
+
+        int currentYear = getCurrentYear();
+        int maxBirthYear = currentYear - 18;
+
+        String value = target.getText().toString().trim();
+
+        if (!value.isEmpty()) {
+            try {
+                int year = Integer.parseInt(value);
+
+                if (year >= 1950 && year <= maxBirthYear) {
+                    calendar.set(Calendar.YEAR, year);
+                } else {
+                    calendar.set(Calendar.YEAR, maxBirthYear);
+                }
+
+            } catch (Exception e) {
+                calendar.set(Calendar.YEAR, maxBirthYear);
+            }
+        } else {
+            calendar.set(Calendar.YEAR, maxBirthYear);
+        }
+
+        DatePickerDialog dialog = new DatePickerDialog(
+                this,
+                (view, year, month, dayOfMonth) -> target.setText(String.valueOf(year)),
+                calendar.get(Calendar.YEAR),
+                Calendar.JANUARY,
+                1
+        );
+
+        Calendar min = Calendar.getInstance();
+        min.set(1950, Calendar.JANUARY, 1);
+
+        Calendar max = Calendar.getInstance();
+        max.set(maxBirthYear, Calendar.DECEMBER, 31);
+
+        dialog.getDatePicker().setMinDate(min.getTimeInMillis());
+        dialog.getDatePicker().setMaxDate(max.getTimeInMillis());
+
+        dialog.show();
+    }
+
+    private int getCurrentYear() {
+        return Integer.parseInt(new SimpleDateFormat("yyyy", Locale.getDefault()).format(new Date()));
+    }
+
+    private boolean isValidVietnameseName(String name) {
+        if (name == null) {
+            return false;
+        }
+
+        String value = name.trim();
+
+        if (value.isEmpty()) {
+            return false;
+        }
+
+        return value.matches("^[\\p{L}]+([\\s.'-][\\p{L}]+)*$");
     }
 
     private String generateEmployeeCode(String ten, int namSinh, boolean gender) {
@@ -1339,5 +1498,6 @@ public class EmployeeActivity extends AppCompatActivity {
         double luongCoBan;
         String maPB;
         String maCV;
+        String anh;
     }
 }

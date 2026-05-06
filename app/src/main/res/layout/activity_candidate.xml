@@ -10,7 +10,7 @@
         android:orientation="vertical">
 
         <LinearLayout
-            android:id="@+id/layoutEmployeeHeader"
+            android:id="@+id/layoutCandidateHeader"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -37,9 +37,9 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Quản lý nhân viên"
+                        android:text="Ứng viên tuyển dụng"
                         android:textColor="#FFD700"
-                        android:textSize="26sp"
+                        android:textSize="25sp"
                         android:textStyle="bold"
                         android:singleLine="true"
                         android:ellipsize="end" />
@@ -47,47 +47,34 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Quản lý danh sách nhân viên, phòng ban, chức vụ và thưởng phạt."
+                        android:text="Duyệt hồ sơ, mời phỏng vấn và xác nhận ứng viên đã phỏng vấn."
                         android:textColor="#CBD5F5"
                         android:textSize="13sp"
                         android:layout_marginTop="3dp" />
                 </LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                <Button
+                    android:id="@+id/btnBackEmployee"
+                    android:layout_width="124dp"
+                    android:layout_height="50dp"
                     android:layout_marginLeft="12dp"
-                    android:orientation="vertical">
-
-                    <Button
-                        android:id="@+id/btnAddEmployee"
-                        android:layout_width="116dp"
-                        android:layout_height="50dp"
-                        android:text="+ Thêm"
-                        android:textAllCaps="false"
-                        android:textStyle="bold"
-                        android:textSize="16sp"
-                        android:textColor="#000000"
-                        android:backgroundTint="@null"
-                        android:background="@drawable/hr_logout_bg" />
-
-                    <Button
-                        android:id="@+id/btnCandidate"
-                        android:layout_width="116dp"
-                        android:layout_height="44dp"
-                        android:layout_marginTop="8dp"
-                        android:text="Ứng viên"
-                        android:textAllCaps="false"
-                        android:textStyle="bold"
-                        android:textSize="14sp"
-                        android:textColor="#FFFFFF"
-                        android:backgroundTint="@null"
-                        android:background="@drawable/employee_button_dark_bg" />
-                </LinearLayout>
+                    android:minWidth="0dp"
+                    android:minHeight="0dp"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:text="Nhân viên"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    android:textAllCaps="false"
+                    android:textStyle="bold"
+                    android:textSize="13sp"
+                    android:textColor="#000000"
+                    android:backgroundTint="@null"
+                    android:background="@drawable/hr_logout_bg" />
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/layoutFilterToggle"
+                android:id="@+id/layoutCandidateFilterToggle"
                 android:layout_width="match_parent"
                 android:layout_height="46dp"
                 android:orientation="horizontal"
@@ -100,13 +87,13 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Bộ lọc"
+                    android:text="Bộ lọc ứng viên"
                     android:textColor="#FFD700"
                     android:textSize="15sp"
                     android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/txtFilterArrow"
+                    android:id="@+id/txtCandidateFilterArrow"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="▼"
@@ -116,7 +103,7 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/layoutFilterContent"
+                android:id="@+id/layoutCandidateFilterContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -126,10 +113,10 @@
                 android:visibility="gone">
 
                 <EditText
-                    android:id="@+id/edtSearchEmployee"
+                    android:id="@+id/edtSearchCandidate"
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
-                    android:hint="Tìm theo mã hoặc họ tên..."
+                    android:hint="Tìm theo tên hoặc email..."
                     android:singleLine="true"
                     android:textColor="#E5E7EB"
                     android:textColorHint="#8B90A0"
@@ -137,32 +124,31 @@
                     android:paddingRight="16dp"
                     android:background="@drawable/employee_input_bg" />
 
-                <Spinner
-                    android:id="@+id/spnDepartment"
+                <EditText
+                    android:id="@+id/edtFromDate"
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
                     android:layout_marginTop="10dp"
-                    android:background="@drawable/employee_input_bg"
-                    android:paddingLeft="12dp"
-                    android:paddingRight="12dp" />
+                    android:hint="Từ ngày: yyyy-MM-dd"
+                    android:singleLine="true"
+                    android:textColor="#E5E7EB"
+                    android:textColorHint="#8B90A0"
+                    android:paddingLeft="16dp"
+                    android:paddingRight="16dp"
+                    android:background="@drawable/employee_input_bg" />
 
-                <Spinner
-                    android:id="@+id/spnPosition"
+                <EditText
+                    android:id="@+id/edtToDate"
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
                     android:layout_marginTop="10dp"
-                    android:background="@drawable/employee_input_bg"
-                    android:paddingLeft="12dp"
-                    android:paddingRight="12dp" />
-
-                <Spinner
-                    android:id="@+id/spnType"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/employee_input_bg"
-                    android:paddingLeft="12dp"
-                    android:paddingRight="12dp" />
+                    android:hint="Đến ngày: yyyy-MM-dd"
+                    android:singleLine="true"
+                    android:textColor="#E5E7EB"
+                    android:textColorHint="#8B90A0"
+                    android:paddingLeft="16dp"
+                    android:paddingRight="16dp"
+                    android:background="@drawable/employee_input_bg" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -171,7 +157,7 @@
                     android:orientation="horizontal">
 
                     <Button
-                        android:id="@+id/btnFilter"
+                        android:id="@+id/btnFilterCandidate"
                         android:layout_width="0dp"
                         android:layout_height="48dp"
                         android:layout_weight="1"
@@ -183,7 +169,7 @@
                         android:background="@drawable/hr_logout_bg" />
 
                     <Button
-                        android:id="@+id/btnReset"
+                        android:id="@+id/btnResetCandidate"
                         android:layout_width="0dp"
                         android:layout_height="48dp"
                         android:layout_weight="1"
@@ -197,17 +183,40 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <Button
+                android:id="@+id/btnDownloadSelectedFiles"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="10dp"
+                android:text="⬇ Tải file các ứng viên đã chọn"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="@null"
+                android:background="@drawable/employee_button_dark_bg" />
+
+            <Button
+                android:id="@+id/btnExportDeleteCandidate"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginTop="8dp"
+                android:text="✔ Xác nhận đã phỏng vấn và xuất PDF"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                android:textColor="#000000"
+                android:backgroundTint="@null"
+                android:background="@drawable/hr_logout_bg" />
         </LinearLayout>
 
         <ScrollView
-            android:id="@+id/scrollEmployee"
+            android:id="@+id/scrollCandidate"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
             android:fillViewport="true">
 
             <LinearLayout
-                android:id="@+id/layoutEmployeeContent"
+                android:id="@+id/layoutCandidateContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -217,14 +226,12 @@
                 android:paddingBottom="128dp">
 
                 <LinearLayout
-                    android:id="@+id/layoutEmployeeList"
+                    android:id="@+id/layoutCandidateList"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical" />
-
             </LinearLayout>
         </ScrollView>
-
     </LinearLayout>
 
     <LinearLayout
@@ -241,5 +248,4 @@
         android:paddingRight="8dp"
         android:paddingTop="8dp"
         android:paddingBottom="8dp" />
-
 </FrameLayout>
