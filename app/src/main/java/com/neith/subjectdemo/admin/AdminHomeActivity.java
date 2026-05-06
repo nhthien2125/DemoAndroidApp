@@ -48,7 +48,6 @@ public class AdminHomeActivity extends AppCompatActivity {
 
         LinearLayout bottomNavContainer = findViewById(R.id.bottomNavContainer);
         BottomNav.setupAdmin(this, bottomNavContainer, BottomNav.ADMIN_HOME);
-
         loadHome();
     }
 
