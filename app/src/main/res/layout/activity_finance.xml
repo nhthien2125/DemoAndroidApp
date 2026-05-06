@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/finance"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Cấu hình Hạn mức Dự án (Triệu VNĐ)"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="20dp">
+
+        <EditText
+            android:id="@+id/edtHanMuc"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:inputType="numberDecimal"
+            android:hint="Nhập hạn mức..." />
+
+        <Button
+            android:id="@+id/btnLuuHanMuc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Lưu HM" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="2dp" android:background="#CCCCCC" android:layout_marginBottom="20dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Thêm Giao dịch Mới"
+        android:textStyle="bold" />
+
+    <RadioGroup
+        android:id="@+id/rgLoaiGiaoDich"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <RadioButton
+            android:id="@+id/rbThu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Thu tiền" />
+        <RadioButton
+            android:id="@+id/rbChi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Chi vật tư"
+            android:checked="true" />
+    </RadioGroup>
+
+    <EditText
+        android:id="@+id/edtSoTien"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal"
+        android:hint="Số tiền (Triệu VNĐ)" />
+
+    <EditText
+        android:id="@+id/edtMoTa"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Mô tả (VD: Mua xi măng)" />
+
+    <Button
+        android:id="@+id/btnThemGiaoDich"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Lưu Giao Dịch" />
+
+    <TextView
+        android:id="@+id/tvThongKe"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:textSize="16sp"
+        android:textColor="#D32F2F"
+        android:text="Đã chi: 0 / Hạn mức: 0" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvGiaoDich"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="10dp"/>
+</LinearLayout>
