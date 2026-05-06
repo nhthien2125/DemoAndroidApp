@@ -8,10 +8,10 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.neith.subjectdemo.fn.data.SharedPrefsManager;
-import com.neith.subjectdemo.hr.HRActivity;
-
 import com.neith.subjectdemo.fn.FNActivity;
+import com.neith.subjectdemo.fn.data.SharedPrefsManager;
+import com.neith.subjectdemo.helper.SessionManager;
+import com.neith.subjectdemo.hr.HRActivity;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -33,16 +33,27 @@ public class MainActivity extends AppCompatActivity {
         Button btnFinance = findViewById(R.id.btnFinance);
         Button btnExit = findViewById(R.id.btnExit);
 
-        btnHR.setOnClickListener(v ->
-                startActivity(new Intent(this, HRActivity.class)));
+        btnHR.setOnClickListener(v -> {
+            // Lưu session giả để test HR
+            SessionManager.saveLogin(this, "Admin_HR", "HR001");
+            Intent intent = new Intent(this, HRActivity.class);
+            intent.putExtra("USERNAME", "Admin_HR");
+            intent.putExtra("AUTH", "HR001");
+            startActivity(intent);
+        });
 
         btnFinance.setOnClickListener(v -> {
+            // Lưu session giả để test Finance
+            SessionManager.saveLogin(this, "Finance_User", "FN001");
+            
             SharedPrefsManager prefsManager = new SharedPrefsManager(this);
             prefsManager.setUserRole(SharedPrefsManager.ROLE_FINANCE);
 
             Toast.makeText(this, "Đang vào hệ thống Tài chính...", Toast.LENGTH_SHORT).show();
 
             Intent intent = new Intent(MainActivity.this, FNActivity.class);
+            intent.putExtra("USERNAME", "Finance_User");
+            intent.putExtra("AUTH", "FN001");
             startActivity(intent);
         });
 
@@ -51,32 +62,21 @@ public class MainActivity extends AppCompatActivity {
 
     private void copyDatabase() {
         File dbFile = getDatabasePath(DATABASE_NAME);
-        Log.d("DB_PATH", dbFile.getPath());
-
-        if (dbFile.exists()) {
-            Log.d("DB_COPY", "DB đã tồn tại");
-            return;
-        }
+        if (dbFile.exists()) return;
 
         try {
             InputStream input = getAssets().open(DATABASE_NAME);
             dbFile.getParentFile().mkdirs();
             OutputStream output = new FileOutputStream(dbFile);
-
             byte[] buffer = new byte[1024];
             int len;
-
             while ((len = input.read(buffer)) > 0) {
                 output.write(buffer, 0, len);
             }
-
             output.close();
             input.close();
-
-            Toast.makeText(this, "Copy DB OK", Toast.LENGTH_LONG).show();
-
         } catch (Exception e) {
-            Toast.makeText(this, "Copy DB lỗi: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            e.printStackTrace();
         }
     }
 }

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:id="@+id/group_user">
+        <item
+            android:id="@+id/menu_user_profile"
+            android:title="Hello, User" />
+    </group>
+
+    <item
+        android:id="@+id/menu_revenue"
+        android:title="Quản lý doanh thu">
+        <menu>
+            <item
+                android:id="@+id/menu_revenue_project"
+                android:title="Thu dự án" />
+            <item
+                android:id="@+id/menu_revenue_service"
+                android:title="Doanh thu dịch vụ" />
+        </menu>
+    </item>
+    <item
+        android:id="@+id/menu_expense"
+        android:title="Quản lý chi phí">
+        <menu>
+            <item
+                android:id="@+id/menu_expense_material"
+                android:title="Chi cho nguyên vật liệu" />
+            <item
+                android:id="@+id/menu_expense_transport"
+                android:title="Chi vận chuyển" />
+            <item
+                android:id="@+id/menu_expense_project"
+                android:title="Chi dự án" />
+        </menu>
+    </item>
+
+    <group android:id="@+id/group_system">
+        <item
+            android:id="@+id/menu_logout"
+            android:title="Thoát" />
+    </group>
+</menu>

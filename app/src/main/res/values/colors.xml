@@ -2,4 +2,20 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Finance Dashboard Colors -->
+    <color name="fn_bg">#0A0E14</color>
+    <color name="fn_card_bg">#151D29</color>
+    <color name="fn_accent">#BD5E00</color>
+    <color name="fn_text_main">#FFFFFF</color>
+    <color name="fn_text_sec">#8B949E</color>
+    <color name="fn_blue_dot">#3FB1FE</color>
+
+    <!-- Service Revenue Chart Colors -->
+    <color name="chart_consult">#BD5E00</color>
+    <color name="chart_build">#3B82F6</color>
+    <color name="chart_maintain">#EC4899</color>
+    <color name="chart_renovate">#EAB308</color>
+    <color name="chart_clean">#06B6D4</color>
+    <color name="chart_repair">#10B981</color>
 </resources>

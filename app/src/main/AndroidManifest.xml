@@ -13,7 +13,18 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.SubjectDemo">
-
+        <activity
+            android:name=".fn.TransportExpenseActivity"
+            android:exported="false" />
+        <activity
+            android:name=".fn.ProjectRevenueActivity"
+            android:exported="false" />
+        <activity
+            android:name=".fn.ServiceRevenueActivity"
+            android:exported="false" />
+        <activity
+            android:name=".fn.FNActivity"
+            android:exported="false" />
         <activity
             android:name=".hr.ProjectDetailActivity"
             android:exported="false" />
@@ -46,9 +57,6 @@
             android:exported="false" />
         <activity
             android:name=".auth.SignUp"
-            android:exported="false" />
-        <activity
-            android:name=".fn.FNActivity"
             android:exported="false" />
         <activity
             android:name=".admin.AdminActivity"
