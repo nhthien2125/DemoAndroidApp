@@ -1,4 +1,4 @@
-package com.neith.subjectdemo.ui.finance;
+package com.neith.subjectdemo.fn;
 
 import android.graphics.Color;
 import android.view.LayoutInflater;
@@ -8,7 +8,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.neith.subjectdemo.R;
-import com.neith.subjectdemo.model.Transaction;
+import com.neith.subjectdemo.fn.model.Transaction;
 import java.util.List;
 
 public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.ViewHolder> {

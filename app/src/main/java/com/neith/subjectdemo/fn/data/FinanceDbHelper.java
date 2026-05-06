@@ -1,4 +1,4 @@
-package com.neith.subjectdemo.data;
+package com.neith.subjectdemo.fn.data;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -6,7 +6,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import com.neith.subjectdemo.model.Transaction;
+import com.neith.subjectdemo.fn.model.Transaction;
 
 import java.util.ArrayList;
 import java.util.List;

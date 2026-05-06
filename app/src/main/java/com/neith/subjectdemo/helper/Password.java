@@ -1,5 +1,6 @@
 package com.neith.subjectdemo.helper;
 
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
 public class Password {
@@ -7,7 +8,7 @@ public class Password {
     public static String sha256(String text) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] bytes = digest.digest(text.getBytes("UTF-8"));
+            byte[] bytes = digest.digest(text.getBytes(StandardCharsets.UTF_8));
 
             StringBuilder result = new StringBuilder();
 

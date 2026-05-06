@@ -1,10 +1,10 @@
-package com.neith.subjectdemo.model;
+package com.neith.subjectdemo.fn.model;
 
 public class Transaction {
-    private int id;
-    private int type; // 0=expense, 1=income
-    private double amount;
-    private String description;
+    private final int id;
+    private final int type; // 0=expense, 1=income
+    private final double amount;
+    private final String description;
 
     // Constructor
     public Transaction(int id, int type, double amount, String description) {

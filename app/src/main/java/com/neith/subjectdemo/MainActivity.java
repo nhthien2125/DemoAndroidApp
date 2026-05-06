@@ -8,6 +8,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.neith.subjectdemo.fn.data.SharedPrefsManager;
 import com.neith.subjectdemo.hr.HRActivity;
 
 import com.neith.subjectdemo.fn.FNActivity;
