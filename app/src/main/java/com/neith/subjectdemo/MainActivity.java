@@ -8,8 +8,10 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.neith.subjectdemo.data.SharedPrefsManager;
-import com.neith.subjectdemo.ui.finance.FinanceActivity;
+import com.neith.subjectdemo.fn.data.SharedPrefsManager;
+import com.neith.subjectdemo.hr.HRActivity;
+
+import com.neith.subjectdemo.fn.FNActivity;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -18,7 +20,7 @@ import java.io.OutputStream;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String DATABASE_NAME = "QLNSVATC_v2.db";
+    private static final String DATABASE_NAME = "QLNSVATC_F.db";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
 
             Toast.makeText(this, "Đang vào hệ thống Tài chính...", Toast.LENGTH_SHORT).show();
 
-            Intent intent = new Intent(MainActivity.this, FinanceActivity.class);
+            Intent intent = new Intent(MainActivity.this, FNActivity.class);
             startActivity(intent);
         });
 
