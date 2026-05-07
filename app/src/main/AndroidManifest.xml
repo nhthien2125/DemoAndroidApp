@@ -16,6 +16,16 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SubjectDemo">
         <activity
+            android:name=".fn.TransportExpenseActivity"
+            android:exported="false" />
+        <activity
+            android:name=".fn.ProjectRevenueActivity"
+            android:exported="false" />
+        <activity
+            android:name=".fn.ServiceRevenueActivity"
+            android:exported="false" />
+        <activity
+            android:name=".fn.FNActivity"
             android:name=".admin.AdminDataExecuteActivity"
             android:exported="false" />
         <activity

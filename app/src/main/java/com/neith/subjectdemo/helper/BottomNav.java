@@ -1,6 +1,7 @@
 package com.neith.subjectdemo.helper;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -13,6 +14,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.neith.subjectdemo.R;
+import com.neith.subjectdemo.fn.FNActivity;
 import com.neith.subjectdemo.admin.AdminActivityLogActivity;
 import com.neith.subjectdemo.admin.AdminHomeActivity;
 import com.neith.subjectdemo.admin.AdminRoleActivity;
@@ -45,7 +47,14 @@ public class BottomNav {
         container.setClipChildren(false);
         container.setClipToPadding(false);
 
-        addItem(activity, container, "Home", R.drawable.ic_home, HOME, selectedIndex, HRActivity.class);
+        // Xác định trang Home dựa trên quyền
+        String auth = activity.getSharedPreferences("LOGIN_CACHE", Context.MODE_PRIVATE).getString("AUTH", "");
+        Class<?> homeClass = HRActivity.class;
+        if (auth != null && auth.startsWith("FN")) {
+            homeClass = FNActivity.class;
+        }
+
+        addItem(activity, container, "Home", R.drawable.ic_home, HOME, selectedIndex, homeClass);
         addItem(activity, container, "Employee", R.drawable.ic_employee, EMPLOYEE, selectedIndex, EmployeeActivity.class);
         addItem(activity, container, "Department", R.drawable.ic_department, DEPARTMENT, selectedIndex, DepartmentActivity.class);
         addItem(activity, container, "Project", R.drawable.ic_project, PROJECT, selectedIndex, ProjectActivity.class);
@@ -78,26 +87,13 @@ public class BottomNav {
         LinearLayout item = new LinearLayout(activity);
         item.setOrientation(LinearLayout.VERTICAL);
         item.setGravity(Gravity.CENTER);
-        item.setClipChildren(false);
-        item.setClipToPadding(false);
 
-        LinearLayout.LayoutParams itemLp = new LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                1
-        );
+        LinearLayout.LayoutParams itemLp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1);
         item.setLayoutParams(itemLp);
 
         FrameLayout iconHolder = new FrameLayout(activity);
-        iconHolder.setForegroundGravity(Gravity.CENTER);
-
         int holderSize = selected ? dp(activity, 46) : dp(activity, 34);
-
-        LinearLayout.LayoutParams holderLp = new LinearLayout.LayoutParams(
-                holderSize,
-                holderSize
-        );
-
+        LinearLayout.LayoutParams holderLp = new LinearLayout.LayoutParams(holderSize, holderSize);
         if (selected) {
             iconHolder.setBackgroundResource(R.drawable.bottom_nav_selected_bg);
             holderLp.topMargin = dp(activity, 2);
@@ -108,10 +104,7 @@ public class BottomNav {
         icon.setColorFilter(selected ? Color.BLACK : Color.WHITE);
         icon.setAlpha(selected ? 1f : 0.6f);
 
-        FrameLayout.LayoutParams iconLp = new FrameLayout.LayoutParams(
-                selected ? dp(activity, 22) : dp(activity, 20),
-                selected ? dp(activity, 22) : dp(activity, 20)
-        );
+        FrameLayout.LayoutParams iconLp = new FrameLayout.LayoutParams(dp(activity, selected ? 22 : 20), dp(activity, selected ? 22 : 20));
         iconLp.gravity = Gravity.CENTER;
 
         iconHolder.addView(icon, iconLp);
@@ -123,6 +116,11 @@ public class BottomNav {
         text.setAlpha(selected ? 1f : 0.6f);
         text.setTextSize(selected ? 12 : 11);
         text.setTypeface(null, selected ? Typeface.BOLD : Typeface.NORMAL);
+        item.addView(text);
+
+        item.setOnClickListener(v -> {
+            animateClick(item);
+            if (index == selectedIndex) return;
         text.setGravity(Gravity.CENTER);
         text.setSingleLine(true);
 
@@ -142,28 +140,24 @@ public class BottomNav {
             }
 
             Intent intent = new Intent(activity, targetActivity);
+            
+            // QUAN TRỌNG: Chuyển tiếp session để tránh lỗi dashboard
+            String username = activity.getIntent().getStringExtra("USERNAME");
+            String auth = activity.getIntent().getStringExtra("AUTH");
+            intent.putExtra("USERNAME", username);
+            intent.putExtra("AUTH", auth);
+
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             activity.startActivity(intent);
-            activity.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
         });
 
         container.addView(item);
     }
 
     private static void animateClick(View view) {
-        view.animate()
-                .scaleX(0.90f)
-                .scaleY(0.90f)
-                .alpha(0.75f)
-                .setDuration(90)
-                .withEndAction(() -> view.animate()
-                        .scaleX(1f)
-                        .scaleY(1f)
-                        .alpha(1f)
-                        .setInterpolator(new OvershootInterpolator())
-                        .setDuration(220)
-                        .start())
-                .start();
+        view.animate().scaleX(0.9f).scaleY(0.9f).setDuration(90).withEndAction(() -> 
+            view.animate().scaleX(1f).scaleY(1f).setInterpolator(new OvershootInterpolator()).setDuration(200).start()
+        ).start();
     }
 
     private static int dp(Activity activity, int value) {
