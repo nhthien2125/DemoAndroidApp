@@ -12,7 +12,7 @@ import java.io.InputStream;
 
 public class DB {
 
-    public static final String DB_NAME = "QLNSVATC_F.db";
+    public static final String DB_NAME = "QLNSVATC_Final.db";
 
     public static SQLiteDatabase openDatabase(Context context) {
         copyDatabase(context);

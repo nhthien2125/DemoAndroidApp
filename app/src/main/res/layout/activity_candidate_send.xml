@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/scrollCandidateSubmit"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingLeft="22dp"
+        android:paddingRight="22dp"
+        android:paddingTop="24dp"
+        android:paddingBottom="34dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="20dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Submit application"
+                    android:textColor="#FFD700"
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:singleLine="true"
+                    android:ellipsize="end" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:text="Gửi hồ sơ ứng tuyển đến TBT Center"
+                    android:textColor="#CBD5F5"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btnBackSignIn"
+                android:layout_width="88dp"
+                android:layout_height="46dp"
+                android:layout_marginLeft="10dp"
+                android:text="Back"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                android:textColor="#000000"
+                android:backgroundTint="@null"
+                android:background="@drawable/hr_logout_bg" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/hr_card_bg"
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Candidate information"
+                android:textColor="#FFD700"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="14dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Full name *"
+                android:textColor="#E5E7EB"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+
+            <EditText
+                android:id="@+id/edtCandidateName"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:hint="Enter your full name"
+                android:singleLine="true"
+                android:textColor="#E5E7EB"
+                android:textColorHint="#8B90A0"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:background="@drawable/employee_input_bg" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Email *"
+                android:textColor="#E5E7EB"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="6dp" />
+
+            <EditText
+                android:id="@+id/edtCandidateEmail"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:hint="you@example.com"
+                android:singleLine="true"
+                android:textColor="#E5E7EB"
+                android:textColorHint="#8B90A0"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:background="@drawable/employee_input_bg" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Application files"
+                android:textColor="#FFD700"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Personal Information *"
+                android:textColor="#E5E7EB"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="6dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <Button
+                    android:id="@+id/btnChooseInfo"
+                    android:layout_width="112dp"
+                    android:layout_height="44dp"
+                    android:text="Choose"
+                    android:textAllCaps="false"
+                    android:textStyle="bold"
+                    android:textColor="#000000"
+                    android:backgroundTint="@null"
+                    android:background="@drawable/hr_logout_bg" />
+
+                <TextView
+                    android:id="@+id/txtInfoFileName"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginLeft="10dp"
+                    android:text="PDF, DOC, DOCX, JPG, PNG..."
+                    android:textColor="#CBD5F5"
+                    android:textSize="13sp"
+                    android:singleLine="true"
+                    android:ellipsize="middle" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Degree's Files *"
+                android:textColor="#E5E7EB"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="6dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <Button
+                    android:id="@+id/btnChooseDegree"
+                    android:layout_width="112dp"
+                    android:layout_height="44dp"
+                    android:text="Choose"
+                    android:textAllCaps="false"
+                    android:textStyle="bold"
+                    android:textColor="#000000"
+                    android:backgroundTint="@null"
+                    android:background="@drawable/hr_logout_bg" />
+
+                <TextView
+                    android:id="@+id/txtDegreeFileName"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginLeft="10dp"
+                    android:text="PDF, JPG, JPEG, PNG..."
+                    android:textColor="#CBD5F5"
+                    android:textSize="13sp"
+                    android:singleLine="true"
+                    android:ellipsize="middle" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Others - CV, portfolio..."
+                android:textColor="#E5E7EB"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="6dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <Button
+                    android:id="@+id/btnChooseOther"
+                    android:layout_width="112dp"
+                    android:layout_height="44dp"
+                    android:text="Choose"
+                    android:textAllCaps="false"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="@null"
+                    android:background="@drawable/employee_button_dark_bg" />
+
+                <TextView
+                    android:id="@+id/txtOtherFileName"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginLeft="10dp"
+                    android:text="PDF, DOC, DOCX, ZIP..."
+                    android:textColor="#CBD5F5"
+                    android:textSize="13sp"
+                    android:singleLine="true"
+                    android:ellipsize="middle" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btnSubmitCandidate"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:layout_marginTop="26dp"
+                android:text="Submit your file"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:textColor="#000000"
+                android:backgroundTint="@null"
+                android:background="@drawable/hr_logout_bg" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="All candidate information is secured."
+                android:textColor="#CBD5F5"
+                android:textSize="12sp"
+                android:gravity="center"
+                android:layout_marginTop="12dp" />
+
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

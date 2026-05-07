@@ -15,6 +15,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.neith.subjectdemo.R;
+import com.neith.subjectdemo.helper.ActivityLogger;
 import com.neith.subjectdemo.helper.DB;
 import com.neith.subjectdemo.helper.EmailSender;
 import com.neith.subjectdemo.helper.OTP;
@@ -109,31 +110,37 @@ public class SignUp extends AppCompatActivity {
         if (username.isEmpty() || password.isEmpty() || rePassword.isEmpty()
                 || email.isEmpty() || code.isEmpty()) {
             Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show();
+            ActivityLogger.log(db, "REGISTER_FAILED_INCOMPLETE", "USER", "Đăng ký thất bại do thiếu thông tin: " + username);
             return;
         }
 
         if (!password.equals(rePassword)) {
             Toast.makeText(this, "Password nhập lại không khớp", Toast.LENGTH_SHORT).show();
+            ActivityLogger.log(db, "REGISTER_FAILED_PASSWORD_MISMATCH", "USER", "Đăng ký thất bại do password không khớp: " + username);
             return;
         }
 
         if (isUsernameExists(username)) {
             Toast.makeText(this, "Username đã tồn tại", Toast.LENGTH_SHORT).show();
+            ActivityLogger.log(db, "REGISTER_FAILED_USERNAME_EXISTS", "USER", "Đăng ký thất bại, username tồn tại: " + username);
             return;
         }
 
         if (isEmailExists(email)) {
             Toast.makeText(this, "Gmail này đã được đăng ký", Toast.LENGTH_SHORT).show();
+            ActivityLogger.log(db, "REGISTER_FAILED_EMAIL_EXISTS", "USER", "Đăng ký thất bại, email tồn tại: " + email);
             return;
         }
 
         if (isCodeExistsInConfirmAuth(code)) {
             Toast.makeText(this, "CODE này đã được đăng ký", Toast.LENGTH_SHORT).show();
+            ActivityLogger.log(db, "REGISTER_FAILED_CODE_EXISTS", "USER", "Đăng ký thất bại, code tồn tại: " + code);
             return;
         }
 
         if (!isEmployeeCodeExists(code)) {
             Toast.makeText(this, "Mã nhân viên không tồn tại", Toast.LENGTH_SHORT).show();
+            ActivityLogger.log(db, "REGISTER_FAILED_INVALID_EMPLOYEE_CODE", "USER", "Đăng ký thất bại, mã nhân viên không tồn tại: " + code);
             return;
         }
 
@@ -149,6 +156,8 @@ public class SignUp extends AppCompatActivity {
 
                 runOnUiThread(() -> {
                     btnSignUp.setEnabled(true);
+
+                    ActivityLogger.log(db, "REGISTER_OTP_SENT", "USER", "Đã gửi OTP đến email: " + email + " cho username: " + username);
 
                     Intent intent = new Intent(this, VerifyOtpActivity.class);
                     intent.putExtra("USERNAME", username);
@@ -166,6 +175,7 @@ public class SignUp extends AppCompatActivity {
                 runOnUiThread(() -> {
                     btnSignUp.setEnabled(true);
                     Toast.makeText(this, "Gửi OTP lỗi: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    ActivityLogger.log(db, "REGISTER_OTP_FAILED", "USER", "Gửi OTP thất bại cho email: " + email + ", lỗi: " + e.getMessage());
                 });
             }
         });
