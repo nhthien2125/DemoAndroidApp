@@ -15,11 +15,16 @@ import android.widget.TextView;
 
 import com.neith.subjectdemo.R;
 import com.neith.subjectdemo.fn.FNActivity;
+import com.neith.subjectdemo.admin.AdminActivityLogActivity;
+import com.neith.subjectdemo.admin.AdminHomeActivity;
+import com.neith.subjectdemo.admin.AdminRoleActivity;
+import com.neith.subjectdemo.admin.AdminDataActivity;
 import com.neith.subjectdemo.hr.DepartmentActivity;
 import com.neith.subjectdemo.hr.EmployeeActivity;
 import com.neith.subjectdemo.hr.HRActivity;
 import com.neith.subjectdemo.hr.ProjectActivity;
 import com.neith.subjectdemo.hr.WorkScheduleActivity;
+import com.neith.subjectdemo.fn.FNActivity;
 
 public class BottomNav {
 
@@ -28,6 +33,14 @@ public class BottomNav {
     public static final int DEPARTMENT = 2;
     public static final int PROJECT = 3;
     public static final int WORK_SCHEDULE = 4;
+
+    public static final int ADMIN_HOME = 100;
+    public static final int ADMIN_ROLE = 101;
+    public static final int ADMIN_ACTIVITY_LOG = 102;
+    public static final int ADMIN_DATA = 103;
+    public static final int ADMIN_HR = 104;
+
+    public static final int ADMIN_FN = 105;
 
     public static void setup(Activity activity, LinearLayout container, int selectedIndex) {
         container.removeAllViews();
@@ -46,6 +59,19 @@ public class BottomNav {
         addItem(activity, container, "Department", R.drawable.ic_department, DEPARTMENT, selectedIndex, DepartmentActivity.class);
         addItem(activity, container, "Project", R.drawable.ic_project, PROJECT, selectedIndex, ProjectActivity.class);
         addItem(activity, container, "Work", R.drawable.ic_work_schedule, WORK_SCHEDULE, selectedIndex, WorkScheduleActivity.class);
+    }
+
+    public static void setupAdmin(Activity activity, LinearLayout container, int selectedIndex) {
+        container.removeAllViews();
+        container.setClipChildren(false);
+        container.setClipToPadding(false);
+
+        addItem(activity, container, "Admin", R.drawable.ic_home, ADMIN_HOME, selectedIndex, AdminHomeActivity.class);
+        addItem(activity, container, "Roles", R.drawable.ic_employee, ADMIN_ROLE, selectedIndex, AdminRoleActivity.class);
+        addItem(activity, container, "Logs", R.drawable.ic_project, ADMIN_ACTIVITY_LOG, selectedIndex, AdminActivityLogActivity.class);
+        addItem(activity, container, "Data", R.drawable.ic_db, ADMIN_DATA, selectedIndex, AdminDataActivity.class);
+        addItem(activity, container, "HR", R.drawable.ic_work_schedule, ADMIN_HR, selectedIndex, HRActivity.class);
+        addItem(activity, container, "Finance", R.drawable.ic_finance, ADMIN_FN, selectedIndex, FNActivity.class);
     }
 
     private static void addItem(Activity activity,
@@ -95,6 +121,23 @@ public class BottomNav {
         item.setOnClickListener(v -> {
             animateClick(item);
             if (index == selectedIndex) return;
+        text.setGravity(Gravity.CENTER);
+        text.setSingleLine(true);
+
+        LinearLayout.LayoutParams textLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        textLp.topMargin = dp(activity, 4);
+
+        item.addView(text, textLp);
+
+        item.setOnClickListener(v -> {
+            animateClick(item);
+
+            if (index == selectedIndex) {
+                return;
+            }
 
             Intent intent = new Intent(activity, targetActivity);
             

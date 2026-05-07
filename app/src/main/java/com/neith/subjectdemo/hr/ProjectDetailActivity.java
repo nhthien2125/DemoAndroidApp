@@ -21,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.neith.subjectdemo.R;
 import com.neith.subjectdemo.helper.DB;
 
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -94,23 +95,35 @@ public class ProjectDetailActivity extends AppCompatActivity {
 
         buildHeader();
         buildInfoCard();
+        buildFinanceCard();
+        buildFormulaCard();
         buildCurrentEmployeeCard();
-        buildAvailableEmployeeCard();
+
+        if (!"done".equals(projectInfo.statusCode)) {
+            buildAvailableEmployeeCard();
+        }
     }
 
     private ProjectInfo getProjectInfo(String key) {
         Cursor c = db.rawQuery(
                 "SELECT DTHD.MADAHD, DTHD.MADA, DTHD.MAHD, " +
                         "IFNULL(HD.TENHD, DTHD.MADAHD) AS TENHD, " +
+                        "IFNULL(HD.LOAI, '') AS LOAIHD, " +
                         "IFNULL(HD.NGAYBD, '') AS NGAYBD, " +
+                        "IFNULL(HD.NGAYKT_DUTINH, '') AS NGAYKT_DUTINH, " +
                         "IFNULL(DTHD.NGAYKT, '') AS NGAYKT, " +
-                        "IFNULL(KH.LOAIKH, '') AS KHACHHANG, " +
-                        "IFNULL(KV.TENTINH, '') AS KHUVUC, " +
-                        "IFNULL(LH.TENLH, '') AS LOAIHINH, " +
+                        "IFNULL(DA.MAKH, ''), " +
+                        "IFNULL(KH.LOAIKH, ''), " +
+                        "IFNULL(DT.MAKV, ''), " +
+                        "IFNULL(KV.TENTINH, ''), " +
+                        "IFNULL(KV.HESOKV, 0), " +
+                        "IFNULL(DT.MALH, ''), " +
+                        "IFNULL(LH.TENLH, ''), " +
                         "IFNULL(DA.TIENCOC, 0), " +
                         "IFNULL(DA.TIENNGHIEMTHU_DUTINH, 0), " +
                         "IFNULL(DT.HSTHAYDOI, 0), " +
-                        "IFNULL(DT.TIENNGHIEMTHU_TONG, 0) " +
+                        "IFNULL(DT.TIENNGHIEMTHU_TONG, 0), " +
+                        "(SELECT COUNT(*) FROM NVTHAMGIADA TG WHERE TG.MADAHD = DTHD.MADAHD) " +
                         "FROM DUANTHEOHOPDONG DTHD " +
                         "JOIN DUAN DA ON DTHD.MADA = DA.MADA " +
                         "JOIN HOPDONG HD ON DTHD.MAHD = HD.MAHD " +
@@ -130,19 +143,25 @@ public class ProjectDetailActivity extends AppCompatActivity {
             info.projectCode = c.getString(1);
             info.contractCode = c.getString(2);
             info.projectName = c.getString(3);
-            info.startDate = c.getString(4);
-            info.endDate = c.getString(5);
-            info.customerName = c.getString(6);
-            info.areaName = c.getString(7);
-            info.projectTypeName = c.getString(8);
-            info.deposit = c.getDouble(9);
-            info.expectedTotal = c.getDouble(10);
-            info.coefficient = c.getDouble(11);
-            info.finalTotal = c.getDouble(12);
+            info.contractType = c.getString(4);
+            info.startDate = c.getString(5);
+            info.contractExpectedEnd = c.getString(6);
+            info.endDate = c.getString(7);
+            info.customerCode = c.getString(8);
+            info.customerName = c.getString(9);
+            info.areaCode = c.getString(10);
+            info.areaName = c.getString(11);
+            info.areaFactor = c.getDouble(12);
+            info.projectTypeCode = c.getString(13);
+            info.projectTypeName = c.getString(14);
+            info.deposit = c.getDouble(15);
+            info.expectedTotal = c.getDouble(16);
+            info.coefficient = c.getDouble(17);
+            info.finalTotal = c.getDouble(18);
+            info.employeeCount = c.getInt(19);
         }
 
         c.close();
-
         return info;
     }
 
@@ -195,24 +214,72 @@ public class ProjectDetailActivity extends AppCompatActivity {
         LinearLayout card = makeCard();
 
         card.addView(makeCardTitle("THÔNG TIN DỰ ÁN"));
+        card.addView(makeInfoRow("Mã dự án theo HĐ", projectInfo.projectKey));
         card.addView(makeInfoRow("Mã dự án", projectInfo.projectCode));
         card.addView(makeInfoRow("Mã hợp đồng", projectInfo.contractCode));
+        card.addView(makeInfoRow("Loại hợp đồng", getTypeName(projectInfo.contractType)));
+        card.addView(makeInfoRow("Mã khách hàng", emptyText(projectInfo.customerCode)));
         card.addView(makeInfoRow("Khách hàng", emptyText(projectInfo.customerName)));
+        card.addView(makeInfoRow("Mã khu vực", emptyText(projectInfo.areaCode)));
         card.addView(makeInfoRow("Khu vực", emptyText(projectInfo.areaName)));
-        card.addView(makeInfoRow("Loại hình", emptyText(projectInfo.projectTypeName)));
-        card.addView(makeInfoRow("Thời gian", formatDate(projectInfo.startDate) + " - " + formatDate(projectInfo.endDate)));
+        card.addView(makeInfoRow("Mã loại hình", emptyText(projectInfo.projectTypeCode)));
+        card.addView(makeInfoRow("Loại hình công trình", emptyText(projectInfo.projectTypeName)));
+        card.addView(makeInfoRow("Ngày bắt đầu", formatDate(projectInfo.startDate)));
+        card.addView(makeInfoRow("Ngày KT dự tính HĐ", formatDate(projectInfo.contractExpectedEnd)));
+        card.addView(makeInfoRow("Ngày kết thúc dự án", formatDate(projectInfo.endDate)));
         card.addView(makeInfoRow("Trạng thái", projectInfo.statusLabel));
+        card.addView(makeInfoRow("Nhân sự tham gia", projectInfo.employeeCount + " người"));
 
-        LinearLayout stats = new LinearLayout(this);
-        stats.setOrientation(LinearLayout.VERTICAL);
-        stats.setPadding(0, dp(12), 0, 0);
+        if ("done".equals(projectInfo.statusCode)) {
+            TextView note = makeText(
+                    "Dự án đã hoàn thành nên không thể thêm nhân viên mới.",
+                    13,
+                    ORANGE,
+                    true
+            );
+            note.setPadding(0, dp(10), 0, 0);
+            card.addView(note);
+        }
 
-        stats.addView(makeBigValue("Tiền cọc", projectInfo.deposit + " VND", PRIMARY));
-        stats.addView(makeBigValue("Doanh thu dự kiến", projectInfo.expectedTotal + " VND", BLUE));
-        stats.addView(makeBigValue("Hệ số điều chỉnh", String.valueOf(projectInfo.coefficient), ORANGE));
-        stats.addView(makeBigValue("Tổng nghiệm thu", projectInfo.finalTotal + " VND", GREEN));
+        layoutBody.addView(card);
+    }
 
-        card.addView(stats);
+    private void buildFinanceCard() {
+        LinearLayout card = makeCard();
+
+        card.addView(makeCardTitle("TÀI CHÍNH DỰ ÁN"));
+        card.addView(makeBigValue("Tiền cọc", formatCompactMoney(projectInfo.deposit), PRIMARY));
+        card.addView(makeBigValue("Dự toán cơ sở / doanh thu dự kiến", formatCompactMoney(projectInfo.expectedTotal), BLUE));
+        card.addView(makeBigValue("Hệ số khu vực", String.valueOf(projectInfo.areaFactor <= 0 ? 1 : projectInfo.areaFactor), ORANGE));
+        card.addView(makeBigValue("Hệ số điều chỉnh", String.valueOf(projectInfo.coefficient <= 0 ? 1 : projectInfo.coefficient), ORANGE));
+        card.addView(makeBigValue("Tổng nghiệm thu dự kiến", formatCompactMoney(projectInfo.finalTotal), GREEN));
+
+        layoutBody.addView(card);
+    }
+
+    private void buildFormulaCard() {
+        LinearLayout card = makeCard();
+
+        card.addView(makeCardTitle("CÔNG THỨC TÍNH NGHIỆM THU"));
+
+        String formula =
+                "Tổng nghiệm thu dự kiến =\n" +
+                        "MAX(Dự toán cơ sở, Tiền cọc / Tỷ lệ cọc theo loại)\n" +
+                        "× Hệ số loại hợp đồng\n" +
+                        "× Hệ số thời gian\n" +
+                        "× Hệ số khu vực\n" +
+                        "× Hệ số điều chỉnh\n\n" +
+                        "Dự án này đang dùng:\n" +
+                        "Tỷ lệ cọc: " + formatPercent(getDepositRate(projectInfo.contractType)) + "\n" +
+                        "Hệ số loại: " + getContractTypeFactor(projectInfo.contractType) + "\n" +
+                        "Hệ số thời gian: " + getDurationFactor(projectInfo.startDate, projectInfo.endDate) + "\n" +
+                        "Hệ số khu vực: " + (projectInfo.areaFactor <= 0 ? 1 : projectInfo.areaFactor) + "\n" +
+                        "Hệ số điều chỉnh: " + (projectInfo.coefficient <= 0 ? 1 : projectInfo.coefficient);
+
+        TextView tv = makeText(formula, 13, TEXT, false);
+        tv.setPadding(0, dp(4), 0, 0);
+        card.addView(tv);
+
         layoutBody.addView(card);
     }
 
@@ -275,9 +342,13 @@ public class ProjectDetailActivity extends AppCompatActivity {
         ArrayList<EmployeeRow> list = new ArrayList<>();
 
         Cursor c = db.rawQuery(
-                "SELECT NV.MANV, IFNULL(NV.HOLOT, '') || ' ' || IFNULL(NV.TENNV, '') AS HOTEN " +
+                "SELECT NV.MANV, IFNULL(NV.HOLOT, '') || ' ' || IFNULL(NV.TENNV, '') AS HOTEN, " +
+                        "IFNULL(PB.TENPB, ''), IFNULL(CV.TENCV, ''), IFNULL(L.LUONGCOBAN, 0) " +
                         "FROM NVTHAMGIADA TG " +
                         "JOIN NHANVIEN NV ON TG.MANV = NV.MANV " +
+                        "LEFT JOIN PHONGBAN PB ON NV.MAPB = PB.MAPB " +
+                        "LEFT JOIN VITRICONGVIEC CV ON NV.MACV = CV.MACV " +
+                        "LEFT JOIN LUONG L ON NV.MANV = L.MANV " +
                         "WHERE TG.MADAHD = ? " +
                         "ORDER BY NV.HOLOT, NV.TENNV",
                 new String[]{projectKey}
@@ -287,6 +358,9 @@ public class ProjectDetailActivity extends AppCompatActivity {
             EmployeeRow item = new EmployeeRow();
             item.maNV = c.getString(0);
             item.hoTen = c.getString(1).trim();
+            item.phongBan = c.getString(2);
+            item.chucVu = c.getString(3);
+            item.luongCoBan = c.getDouble(4);
             list.add(item);
         }
 
@@ -300,8 +374,12 @@ public class ProjectDetailActivity extends AppCompatActivity {
         String today = dbDateFormat.format(new Date());
 
         Cursor c = db.rawQuery(
-                "SELECT NV.MANV, IFNULL(NV.HOLOT, '') || ' ' || IFNULL(NV.TENNV, '') AS HOTEN " +
+                "SELECT NV.MANV, IFNULL(NV.HOLOT, '') || ' ' || IFNULL(NV.TENNV, '') AS HOTEN, " +
+                        "IFNULL(PB.TENPB, ''), IFNULL(CV.TENCV, ''), IFNULL(L.LUONGCOBAN, 0) " +
                         "FROM NHANVIEN NV " +
+                        "LEFT JOIN PHONGBAN PB ON NV.MAPB = PB.MAPB " +
+                        "LEFT JOIN VITRICONGVIEC CV ON NV.MACV = CV.MACV " +
+                        "LEFT JOIN LUONG L ON NV.MANV = L.MANV " +
                         "WHERE NV.MANV NOT IN (SELECT MANV FROM NVTHAMGIADA WHERE MADAHD = ?) " +
                         "AND NV.MANV NOT IN ( " +
                         "   SELECT TG.MANV " +
@@ -317,6 +395,9 @@ public class ProjectDetailActivity extends AppCompatActivity {
             EmployeeRow item = new EmployeeRow();
             item.maNV = c.getString(0);
             item.hoTen = c.getString(1).trim();
+            item.phongBan = c.getString(2);
+            item.chucVu = c.getString(3);
+            item.luongCoBan = c.getDouble(4);
             list.add(item);
         }
 
@@ -328,12 +409,13 @@ public class ProjectDetailActivity extends AppCompatActivity {
     private View makeCurrentEmployeeRow(EmployeeRow item) {
         LinearLayout box = makeEmployeeRowBase();
 
-        LinearLayout info = makeEmployeeInfo(item.maNV, item.hoTen, "Đang tham gia dự án");
+        LinearLayout info = makeEmployeeInfo(
+                item.maNV,
+                item.hoTen,
+                "Đang tham gia • " + emptyText(item.phongBan) + " • " + emptyText(item.chucVu) + " • " + formatCompactMoney(item.luongCoBan)
+        );
 
-        box.addView(info, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
+        box.addView(info);
 
         LinearLayout actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.HORIZONTAL);
@@ -354,12 +436,13 @@ public class ProjectDetailActivity extends AppCompatActivity {
     private View makeAvailableEmployeeRow(EmployeeRow item) {
         LinearLayout box = makeEmployeeRowBase();
 
-        LinearLayout info = makeEmployeeInfo(item.maNV, item.hoTen, "Có thể thêm vào dự án");
+        LinearLayout info = makeEmployeeInfo(
+                item.maNV,
+                item.hoTen,
+                "Có thể thêm • " + emptyText(item.phongBan) + " • " + emptyText(item.chucVu) + " • " + formatCompactMoney(item.luongCoBan)
+        );
 
-        box.addView(info, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
+        box.addView(info);
 
         LinearLayout actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.HORIZONTAL);
@@ -377,39 +460,12 @@ public class ProjectDetailActivity extends AppCompatActivity {
         return box;
     }
 
-    private LinearLayout makeEmployeeRowBase() {
-        LinearLayout box = new LinearLayout(this);
-        box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(dp(12), dp(10), dp(12), dp(10));
-        box.setBackgroundResource(R.drawable.employee_input_bg);
-
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-        lp.setMargins(0, 0, 0, dp(10));
-        box.setLayoutParams(lp);
-
-        return box;
-    }
-
-    private LinearLayout makeEmployeeInfo(String maNV, String hoTen, String note) {
-        LinearLayout info = new LinearLayout(this);
-        info.setOrientation(LinearLayout.VERTICAL);
-        info.setPadding(0, 0, 0, dp(8));
-
-        TextView name = makeText(hoTen, 15, TEXT, true);
-        name.setSingleLine(false);
-        info.addView(name);
-
-        TextView code = makeText(maNV + " • " + note, 12, SUB, false);
-        code.setPadding(0, dp(2), 0, 0);
-        info.addView(code);
-
-        return info;
-    }
-
     private void addEmployee(String maNV) {
+        if ("done".equals(projectInfo.statusCode)) {
+            Toast.makeText(this, "Dự án đã hoàn thành, không thể thêm nhân viên.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
         if (employeeExistsInProject(maNV)) {
             Toast.makeText(this, "Nhân viên đã có trong dự án.", Toast.LENGTH_SHORT).show();
             return;
@@ -517,17 +573,94 @@ public class ProjectDetailActivity extends AppCompatActivity {
                 return "Đang thực hiện";
             case "done":
                 return "Hoàn thành";
-            case "overdue":
-                return "Quá hạn";
             default:
                 return "Đúng tiến độ";
         }
     }
 
+    private double getDepositRate(String typeCode) {
+        switch ((typeCode == null ? "" : typeCode).trim()) {
+            case "1":
+                return 0.30;
+            case "2":
+                return 0.25;
+            case "3":
+                return 0.20;
+            case "4":
+                return 0.15;
+            default:
+                return 0.20;
+        }
+    }
+
+    private double getContractTypeFactor(String typeCode) {
+        switch ((typeCode == null ? "" : typeCode).trim()) {
+            case "1":
+                return 1.05;
+            case "2":
+                return 1.10;
+            case "3":
+                return 1.15;
+            case "4":
+                return 1.20;
+            default:
+                return 1.00;
+        }
+    }
+
+    private double getDurationFactor(String start, String end) {
+        Date s = parseDate(start);
+        Date e = parseDate(end);
+
+        if (s == null || e == null || e.before(s)) {
+            return 1.00;
+        }
+
+        long diff = e.getTime() - s.getTime();
+        long days = diff / (1000L * 60L * 60L * 24L) + 1;
+
+        if (days <= 30) {
+            return 1.00;
+        }
+
+        if (days <= 90) {
+            return 1.05;
+        }
+
+        if (days <= 180) {
+            return 1.10;
+        }
+
+        return 1.15;
+    }
+
+    private String getTypeName(String typeCode) {
+        switch ((typeCode == null ? "" : typeCode).trim()) {
+            case "1":
+                return "Loại 1";
+            case "2":
+                return "Loại 2";
+            case "3":
+                return "Loại 3";
+            case "4":
+                return "Loại 4";
+            default:
+                return "Khác";
+        }
+    }
+
+    private String formatPercent(double value) {
+        return Math.round(value * 100) + "%";
+    }
+
     private Date parseDate(String text) {
         try {
-            if (text == null || text.trim().isEmpty()) return null;
+            if (text == null || text.trim().isEmpty()) {
+                return null;
+            }
+
             return dbDateFormat.parse(text.trim());
+
         } catch (Exception e) {
             return null;
         }
@@ -544,8 +677,13 @@ public class ProjectDetailActivity extends AppCompatActivity {
     private String formatDate(String text) {
         try {
             Date d = parseDate(text);
-            if (d == null) return "?";
+
+            if (d == null) {
+                return "?";
+            }
+
             return viewDateFormat.format(d);
+
         } catch (Exception e) {
             return "?";
         }
@@ -587,18 +725,10 @@ public class ProjectDetailActivity extends AppCompatActivity {
                 true
         );
         v.setGravity(Gravity.RIGHT);
+        v.setSingleLine(false);
 
-        row.addView(l, new LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1
-        ));
-
-        row.addView(v, new LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1
-        ));
+        row.addView(l, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        row.addView(v, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
         return row;
     }
@@ -617,9 +747,45 @@ public class ProjectDetailActivity extends AppCompatActivity {
         box.setLayoutParams(lp);
 
         box.addView(makeText(label, 12, SUB, false));
-        box.addView(makeText(value, 17, color, true));
+
+        TextView valueText = makeText(value, 17, color, true);
+        valueText.setSingleLine(false);
+        box.addView(valueText);
 
         return box;
+    }
+
+    private LinearLayout makeEmployeeRowBase() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(12), dp(10), dp(12), dp(10));
+        box.setBackgroundResource(R.drawable.employee_input_bg);
+
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        lp.setMargins(0, 0, 0, dp(10));
+        box.setLayoutParams(lp);
+
+        return box;
+    }
+
+    private LinearLayout makeEmployeeInfo(String maNV, String hoTen, String note) {
+        LinearLayout info = new LinearLayout(this);
+        info.setOrientation(LinearLayout.VERTICAL);
+        info.setPadding(0, 0, 0, dp(8));
+
+        TextView name = makeText(hoTen, 15, TEXT, true);
+        name.setSingleLine(false);
+        info.addView(name);
+
+        TextView code = makeText(maNV + " • " + note, 12, SUB, false);
+        code.setPadding(0, dp(2), 0, 0);
+        code.setSingleLine(false);
+        info.addView(code);
+
+        return info;
     }
 
     private Button makeMiniButton(String text, int bgColor, int textColor, View.OnClickListener listener) {
@@ -663,6 +829,41 @@ public class ProjectDetailActivity extends AppCompatActivity {
         return value == null || value.trim().isEmpty() ? "—" : value;
     }
 
+    private String formatMoney(double number) {
+        NumberFormat nf = NumberFormat.getInstance(new Locale("vi", "VN"));
+        return nf.format(number) + " VND";
+    }
+
+    private String formatCompactMoney(double number) {
+        double abs = Math.abs(number);
+
+        if (abs >= 1_000_000_000_000.0) {
+            return trimDecimal(number / 1_000_000_000_000.0) + " nghìn tỷ";
+        }
+
+        if (abs >= 1_000_000_000.0) {
+            return trimDecimal(number / 1_000_000_000.0) + " tỷ";
+        }
+
+        if (abs >= 1_000_000.0) {
+            return trimDecimal(number / 1_000_000.0) + " triệu";
+        }
+
+        if (abs >= 1_000.0) {
+            return trimDecimal(number / 1_000.0) + " nghìn";
+        }
+
+        return trimDecimal(number) + " VND";
+    }
+
+    private String trimDecimal(double value) {
+        if (Math.abs(value - Math.round(value)) < 0.0001) {
+            return String.valueOf((long) Math.round(value));
+        }
+
+        return String.format(Locale.getDefault(), "%.1f", value);
+    }
+
     private int dp(int value) {
         return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
@@ -672,10 +873,16 @@ public class ProjectDetailActivity extends AppCompatActivity {
         String projectCode;
         String contractCode;
         String projectName;
+        String contractType;
+        String customerCode;
         String customerName;
+        String areaCode;
         String areaName;
+        double areaFactor;
+        String projectTypeCode;
         String projectTypeName;
         String startDate;
+        String contractExpectedEnd;
         String endDate;
         String statusCode;
         String statusLabel;
@@ -683,10 +890,14 @@ public class ProjectDetailActivity extends AppCompatActivity {
         double expectedTotal;
         double coefficient;
         double finalTotal;
+        int employeeCount;
     }
 
     static class EmployeeRow {
         String maNV;
         String hoTen;
+        String phongBan;
+        String chucVu;
+        double luongCoBan;
     }
 }

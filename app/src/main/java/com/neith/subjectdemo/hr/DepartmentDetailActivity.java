@@ -1,15 +1,22 @@
 package com.neith.subjectdemo.hr;
 
+import android.app.Dialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
+import android.view.Window;
+import android.view.animation.OvershootInterpolator;
 import android.widget.Button;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
@@ -20,6 +27,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.neith.subjectdemo.R;
 import com.neith.subjectdemo.helper.DB;
+
+import java.util.Locale;
 
 public class DepartmentDetailActivity extends AppCompatActivity {
 
@@ -33,6 +42,7 @@ public class DepartmentDetailActivity extends AppCompatActivity {
     final int GREEN = Color.parseColor("#22C55E");
     final int RED = Color.parseColor("#EF4444");
     final int BLUE = Color.parseColor("#3B82F6");
+    final int ORANGE = Color.parseColor("#F97316");
 
     String maPB = "";
     DepartmentInfo departmentInfo;
@@ -81,6 +91,7 @@ public class DepartmentDetailActivity extends AppCompatActivity {
 
         buildHeader();
         buildInfoCard();
+        buildFinanceCard();
         buildEmployeeInCard();
         buildEmployeeOutCard();
     }
@@ -136,14 +147,7 @@ public class DepartmentDetailActivity extends AppCompatActivity {
         titleBox.addView(title);
         titleBox.addView(sub);
 
-        Button back = new Button(this);
-        back.setText("Quay lại");
-        back.setAllCaps(false);
-        back.setTextColor(Color.BLACK);
-        back.setTextSize(12);
-        back.setTypeface(null, Typeface.BOLD);
-        back.setBackgroundTintList(null);
-        back.setBackgroundResource(R.drawable.hr_logout_bg);
+        Button back = makeHeaderButton("Quay lại", R.drawable.hr_logout_bg, Color.BLACK);
         back.setOnClickListener(v -> finish());
 
         topBar.addView(titleBox, new LinearLayout.LayoutParams(
@@ -152,14 +156,25 @@ public class DepartmentDetailActivity extends AppCompatActivity {
                 1
         ));
 
-        LinearLayout.LayoutParams backLp = new LinearLayout.LayoutParams(
-                dp(96),
-                dp(46)
-        );
+        LinearLayout.LayoutParams backLp = new LinearLayout.LayoutParams(dp(96), dp(46));
         backLp.setMargins(dp(10), 0, 0, 0);
         topBar.addView(back, backLp);
 
         layoutHeader.addView(topBar);
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.setPadding(0, dp(10), 0, 0);
+
+        actions.addView(makeMiniButton("Copy mã", PRIMARY, Color.BLACK, v -> copyText(departmentInfo.maPB)));
+        actions.addView(makeMiniButton("Bỏ trưởng phòng", ORANGE, Color.WHITE, v -> clearHead()));
+        actions.addView(makeMiniButton("Làm mới", BLUE, Color.WHITE, v -> loadDetail()));
+
+        HorizontalScrollView hsv = new HorizontalScrollView(this);
+        hsv.setHorizontalScrollBarEnabled(false);
+        hsv.addView(actions);
+
+        layoutHeader.addView(hsv);
     }
 
     private void buildInfoCard() {
@@ -182,18 +197,10 @@ public class DepartmentDetailActivity extends AppCompatActivity {
         LinearLayout inBox = makeStatBox("Trong phòng", String.valueOf(totalIn), "Nhân viên hiện hữu", PRIMARY);
         LinearLayout outBox = makeStatBox("Ngoài phòng", String.valueOf(totalOut), "Có thể thêm vào phòng", BLUE);
 
-        LinearLayout.LayoutParams statLp1 = new LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1
-        );
+        LinearLayout.LayoutParams statLp1 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
         statLp1.setMargins(0, 0, dp(6), 0);
 
-        LinearLayout.LayoutParams statLp2 = new LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1
-        );
+        LinearLayout.LayoutParams statLp2 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
         statLp2.setMargins(dp(6), 0, 0, 0);
 
         stats.addView(inBox, statLp1);
@@ -203,13 +210,51 @@ public class DepartmentDetailActivity extends AppCompatActivity {
         layoutBody.addView(card);
     }
 
+    private void buildFinanceCard() {
+        double totalSalary = getDouble(
+                "SELECT IFNULL(SUM(IFNULL(L.LUONGCOBAN, 0)), 0) " +
+                        "FROM NHANVIEN NV LEFT JOIN LUONG L ON NV.MANV = L.MANV WHERE NV.MAPB = ?",
+                new String[]{maPB}
+        );
+
+        double avgSalary = getDouble(
+                "SELECT IFNULL(AVG(IFNULL(L.LUONGCOBAN, 0)), 0) " +
+                        "FROM NHANVIEN NV LEFT JOIN LUONG L ON NV.MANV = L.MANV WHERE NV.MAPB = ?",
+                new String[]{maPB}
+        );
+
+        double monthHours = getDouble(
+                "SELECT IFNULL(SUM(IFNULL(CC.TONGCA, 0)), 0) " +
+                        "FROM CHAMCONG CC INNER JOIN NHANVIEN NV ON CC.MANV = NV.MANV " +
+                        "WHERE NV.MAPB = ? AND strftime('%Y-%m', CC.NGAYCC) = strftime('%Y-%m', 'now')",
+                new String[]{maPB}
+        );
+
+        double overtime = getDouble(
+                "SELECT IFNULL(SUM(IFNULL(CC.TANGCA, 0)), 0) " +
+                        "FROM CHAMCONG CC INNER JOIN NHANVIEN NV ON CC.MANV = NV.MANV " +
+                        "WHERE NV.MAPB = ? AND strftime('%Y-%m', CC.NGAYCC) = strftime('%Y-%m', 'now')",
+                new String[]{maPB}
+        );
+
+        LinearLayout card = makeCard();
+        card.addView(makeCardTitle("TỔNG HỢP NHANH"));
+
+        card.addView(makeInfoRow("Tổng lương cơ bản", formatMoney(totalSalary)));
+        card.addView(makeInfoRow("Lương trung bình", formatMoney(avgSalary)));
+        card.addView(makeInfoRow("Tổng giờ tháng này", formatHour(monthHours) + " giờ"));
+        card.addView(makeInfoRow("Tăng ca tháng này", formatHour(overtime) + " giờ"));
+
+        layoutBody.addView(card);
+    }
+
     private void buildEmployeeInCard() {
         LinearLayout card = makeCard();
 
         card.addView(makeCardTitle("NHÂN VIÊN TRONG PHÒNG"));
 
         TextView sub = makeText(
-                "Trưởng phòng luôn hiển thị đầu danh sách. Nhân viên thường có thể thăng chức hoặc xóa khỏi phòng.",
+                "Trưởng phòng hiển thị đầu danh sách. Nhân viên thường có thể thăng chức hoặc xóa khỏi phòng.",
                 12,
                 SUB,
                 false
@@ -218,12 +263,14 @@ public class DepartmentDetailActivity extends AppCompatActivity {
         card.addView(sub);
 
         Cursor c = db.rawQuery(
-                "SELECT MANV, IFNULL(HOLOT, '') || ' ' || IFNULL(TENNV, '') AS HOTEN " +
-                        "FROM NHANVIEN " +
-                        "WHERE MAPB = ? " +
-                        "ORDER BY " +
-                        "CASE WHEN MANV = (SELECT MATRG_PHG FROM PHONGBAN WHERE MAPB = ?) THEN 0 ELSE 1 END, " +
-                        "MANV",
+                "SELECT NV.MANV, IFNULL(NV.HOLOT, '') || ' ' || IFNULL(NV.TENNV, '') AS HOTEN, " +
+                        "IFNULL(CV.TENCV, ''), IFNULL(L.LUONGCOBAN, 0), " +
+                        "(SELECT IFNULL(SUM(IFNULL(CC.TONGCA, 0)), 0) FROM CHAMCONG CC WHERE CC.MANV = NV.MANV AND strftime('%Y-%m', CC.NGAYCC) = strftime('%Y-%m', 'now')) AS MONTH_HOURS " +
+                        "FROM NHANVIEN NV " +
+                        "LEFT JOIN VITRICONGVIEC CV ON NV.MACV = CV.MACV " +
+                        "LEFT JOIN LUONG L ON NV.MANV = L.MANV " +
+                        "WHERE NV.MAPB = ? " +
+                        "ORDER BY CASE WHEN NV.MANV = (SELECT MATRG_PHG FROM PHONGBAN WHERE MAPB = ?) THEN 0 ELSE 1 END, NV.MANV",
                 new String[]{maPB, maPB}
         );
 
@@ -237,6 +284,9 @@ public class DepartmentDetailActivity extends AppCompatActivity {
                 EmployeeRow item = new EmployeeRow();
                 item.maNV = c.getString(0);
                 item.hoTen = c.getString(1).trim();
+                item.chucVu = c.getString(2);
+                item.luong = c.getDouble(3);
+                item.gioThang = c.getDouble(4);
 
                 card.addView(makeEmployeeInRow(item));
             }
@@ -262,11 +312,12 @@ public class DepartmentDetailActivity extends AppCompatActivity {
 
         Cursor c = db.rawQuery(
                 "SELECT NV.MANV, IFNULL(NV.HOLOT, '') || ' ' || IFNULL(NV.TENNV, '') AS HOTEN, " +
-                        "IFNULL(PB.TENPB, '') AS CURRENT_DEPT " +
+                        "IFNULL(PB.TENPB, '') AS CURRENT_DEPT, IFNULL(CV.TENCV, '') " +
                         "FROM NHANVIEN NV " +
                         "LEFT JOIN PHONGBAN PB ON NV.MAPB = PB.MAPB " +
+                        "LEFT JOIN VITRICONGVIEC CV ON NV.MACV = CV.MACV " +
                         "WHERE (NV.MAPB IS NULL OR NV.MAPB <> ?) " +
-                        "AND NV.MANV NOT IN (SELECT MATRG_PHG FROM PHONGBAN WHERE MATRG_PHG IS NOT NULL) " +
+                        "AND NV.MANV NOT IN (SELECT MATRG_PHG FROM PHONGBAN WHERE MATRG_PHG IS NOT NULL AND MATRG_PHG <> '') " +
                         "ORDER BY NV.MANV",
                 new String[]{maPB}
         );
@@ -282,6 +333,7 @@ public class DepartmentDetailActivity extends AppCompatActivity {
                 item.maNV = c.getString(0);
                 item.hoTen = c.getString(1).trim();
                 item.currentDept = c.getString(2);
+                item.chucVu = c.getString(3);
 
                 card.addView(makeEmployeeOutRow(item));
             }
@@ -297,12 +349,16 @@ public class DepartmentDetailActivity extends AppCompatActivity {
         boolean head = isHead(item.maNV);
         String note = head ? "Trưởng phòng" : "Nhân viên";
 
-        LinearLayout info = makeEmployeeInfo(item.maNV, item.hoTen, note, head);
+        LinearLayout info = makeEmployeeInfo(
+                item.maNV,
+                item.hoTen,
+                note + " • " + emptyText(item.chucVu)
+                        + "\nLương: " + formatMoney(item.luong)
+                        + " • Giờ tháng này: " + formatHour(item.gioThang),
+                head
+        );
 
-        box.addView(info, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
+        box.addView(info);
 
         LinearLayout actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.HORIZONTAL);
@@ -319,10 +375,7 @@ public class DepartmentDetailActivity extends AppCompatActivity {
         hsv.setHorizontalScrollBarEnabled(false);
         hsv.addView(actions);
 
-        box.addView(hsv, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
+        box.addView(hsv);
 
         return box;
     }
@@ -334,12 +387,14 @@ public class DepartmentDetailActivity extends AppCompatActivity {
                 ? "Chưa thuộc phòng ban"
                 : "PB hiện tại: " + item.currentDept;
 
-        LinearLayout info = makeEmployeeInfo(item.maNV, item.hoTen, dept, false);
+        LinearLayout info = makeEmployeeInfo(
+                item.maNV,
+                item.hoTen,
+                dept + " • " + emptyText(item.chucVu),
+                false
+        );
 
-        box.addView(info, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
+        box.addView(info);
 
         LinearLayout actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.HORIZONTAL);
@@ -352,10 +407,7 @@ public class DepartmentDetailActivity extends AppCompatActivity {
         hsv.setHorizontalScrollBarEnabled(false);
         hsv.addView(actions);
 
-        box.addView(hsv, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
+        box.addView(hsv);
 
         return box;
     }
@@ -446,6 +498,11 @@ public class DepartmentDetailActivity extends AppCompatActivity {
             return;
         }
 
+        if (isHeadSomewhere(maNV) && !isHead(maNV)) {
+            Toast.makeText(this, "Nhân viên này đã là trưởng phòng ở phòng ban khác.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
         ContentValues values = new ContentValues();
         values.put("MATRG_PHG", maNV);
 
@@ -461,6 +518,30 @@ public class DepartmentDetailActivity extends AppCompatActivity {
             loadDetail();
         } else {
             Toast.makeText(this, "Không thể thăng chức.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void clearHead() {
+        if (departmentInfo.maTruongPhong == null || departmentInfo.maTruongPhong.trim().isEmpty()) {
+            Toast.makeText(this, "Phòng ban chưa có trưởng phòng.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        ContentValues values = new ContentValues();
+        values.putNull("MATRG_PHG");
+
+        int rows = db.update(
+                "PHONGBAN",
+                values,
+                "MAPB = ?",
+                new String[]{maPB}
+        );
+
+        if (rows > 0) {
+            Toast.makeText(this, "Đã bỏ trưởng phòng.", Toast.LENGTH_SHORT).show();
+            loadDetail();
+        } else {
+            Toast.makeText(this, "Không thể bỏ trưởng phòng.", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -503,7 +584,7 @@ public class DepartmentDetailActivity extends AppCompatActivity {
         Cursor c = db.rawQuery(
                 "SELECT COUNT(*) FROM NHANVIEN NV " +
                         "WHERE (NV.MAPB IS NULL OR NV.MAPB <> ?) " +
-                        "AND NV.MANV NOT IN (SELECT MATRG_PHG FROM PHONGBAN WHERE MATRG_PHG IS NOT NULL)",
+                        "AND NV.MANV NOT IN (SELECT MATRG_PHG FROM PHONGBAN WHERE MATRG_PHG IS NOT NULL AND MATRG_PHG <> '')",
                 new String[]{maPB}
         );
 
@@ -525,6 +606,20 @@ public class DepartmentDetailActivity extends AppCompatActivity {
 
         if (c.moveToFirst()) {
             value = c.getInt(0);
+        }
+
+        c.close();
+
+        return value;
+    }
+
+    private double getDouble(String sql, String[] args) {
+        Cursor c = db.rawQuery(sql, args);
+
+        double value = 0;
+
+        if (c.moveToFirst()) {
+            value = c.getDouble(0);
         }
 
         c.close();
@@ -558,6 +653,30 @@ public class DepartmentDetailActivity extends AppCompatActivity {
 
     private String emptyText(String value) {
         return value == null || value.trim().isEmpty() ? "—" : value;
+    }
+
+    private String formatMoney(double value) {
+        if (value <= 0) {
+            return "0 VND";
+        }
+
+        return String.format(Locale.getDefault(), "%,.0f VND", value);
+    }
+
+    private String formatHour(double value) {
+        if (Math.abs(value - Math.round(value)) < 0.0001) {
+            return String.valueOf((long) Math.round(value));
+        }
+
+        return String.format(Locale.US, "%.2f", value);
+    }
+
+    private void copyText(String text) {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        ClipData clip = ClipData.newPlainText("Department code", text);
+        clipboard.setPrimaryClip(clip);
+
+        Toast.makeText(this, "Đã copy mã phòng ban.", Toast.LENGTH_SHORT).show();
     }
 
     private LinearLayout makeCard() {
@@ -625,6 +744,18 @@ public class DepartmentDetailActivity extends AppCompatActivity {
         return box;
     }
 
+    private Button makeHeaderButton(String text, int bgRes, int textColor) {
+        Button btn = new Button(this);
+        btn.setText(text);
+        btn.setAllCaps(false);
+        btn.setTextColor(textColor);
+        btn.setTextSize(12);
+        btn.setTypeface(null, Typeface.BOLD);
+        btn.setBackgroundTintList(null);
+        btn.setBackgroundResource(bgRes);
+        return btn;
+    }
+
     private Button makeMiniButton(String text, int bgColor, int textColor, View.OnClickListener listener) {
         Button btn = new Button(this);
         btn.setText(text);
@@ -662,6 +793,22 @@ public class DepartmentDetailActivity extends AppCompatActivity {
         return tv;
     }
 
+    private void animateClick(View view) {
+        view.animate()
+                .scaleX(0.98f)
+                .scaleY(0.98f)
+                .alpha(0.85f)
+                .setDuration(90)
+                .withEndAction(() -> view.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .alpha(1f)
+                        .setInterpolator(new OvershootInterpolator())
+                        .setDuration(220)
+                        .start())
+                .start();
+    }
+
     private int dp(int value) {
         return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
@@ -679,5 +826,8 @@ public class DepartmentDetailActivity extends AppCompatActivity {
         String maNV;
         String hoTen;
         String currentDept;
+        String chucVu;
+        double luong;
+        double gioThang;
     }
 }

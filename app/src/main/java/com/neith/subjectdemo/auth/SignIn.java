@@ -17,6 +17,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.neith.subjectdemo.R;
+import com.neith.subjectdemo.helper.ActivityLogger;
 import com.neith.subjectdemo.helper.DB;
 import com.neith.subjectdemo.helper.Password;
 import com.neith.subjectdemo.helper.SessionManager;
@@ -25,7 +26,7 @@ public class SignIn extends AppCompatActivity {
 
     EditText edtUsername, edtPassword;
     Button btnSignIn, btnGoSignUp;
-    TextView txtForgotPassword;
+    TextView txtForgotPassword, txtGoCandidate;
     CheckBox chkRemember;
     ImageView imgTogglePassword;
     SQLiteDatabase db;
@@ -47,6 +48,7 @@ public class SignIn extends AppCompatActivity {
         btnSignIn = findViewById(R.id.btnSignIn);
         btnGoSignUp = findViewById(R.id.btnGoSignUp);
         txtForgotPassword = findViewById(R.id.txtForgotPassword);
+        txtGoCandidate = findViewById(R.id.CandidateSend);
         chkRemember = findViewById(R.id.chkRemember);
         imgTogglePassword = findViewById(R.id.imgTogglePassword);
 
@@ -63,6 +65,12 @@ public class SignIn extends AppCompatActivity {
 
         txtForgotPassword.setOnClickListener(v -> {
             startActivity(new Intent(this, ForgotPassword.class));
+        });
+
+        txtGoCandidate.setOnClickListener(v -> {
+            Intent intent = new Intent(SignIn.this, CandidateSend.class);
+            startActivity(intent);
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
         });
 
         imgTogglePassword.setOnClickListener(v -> togglePassword());
@@ -139,6 +147,7 @@ public class SignIn extends AppCompatActivity {
 
             if (!passHash.equals(dbPass)) {
                 Toast.makeText(this, "Sai password", Toast.LENGTH_SHORT).show();
+                ActivityLogger.log(db, "LOGIN_FAILED_WRONG_PASSWORD", "USER", "Người dùng " + input + " nhập sai password");
                 cursor.close();
                 return;
             }
@@ -153,10 +162,14 @@ public class SignIn extends AppCompatActivity {
 
             if (!ok) {
                 Toast.makeText(this, "Không xác định quyền: " + auth, Toast.LENGTH_SHORT).show();
+                ActivityLogger.log(db, "LOGIN_FAILED_UNKNOWN_ROLE", "USER", "Người dùng " + input + " có quyền không xác định: " + auth);
+            } else {
+                ActivityLogger.log(db, "LOGIN_SUCCESS", "USER", "Người dùng " + input + " đăng nhập thành công với quyền " + auth);
             }
 
         } else {
             Toast.makeText(this, "Không tìm thấy tài khoản", Toast.LENGTH_SHORT).show();
+            ActivityLogger.log(db, "LOGIN_FAILED_NO_ACCOUNT", "USER", "Không tìm thấy tài khoản: " + input);
             cursor.close();
         }
     }

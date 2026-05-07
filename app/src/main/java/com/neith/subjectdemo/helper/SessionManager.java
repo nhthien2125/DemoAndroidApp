@@ -4,7 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 
-import com.neith.subjectdemo.admin.AdminActivity;
+import com.neith.subjectdemo.admin.AdminHomeActivity;
 import com.neith.subjectdemo.auth.SignIn;
 import com.neith.subjectdemo.fn.FNActivity;
 import com.neith.subjectdemo.hr.HRActivity;
@@ -45,7 +45,7 @@ public class SessionManager {
 
         switch (area) {
             case "AD":
-                intent = new Intent(activity, AdminActivity.class);
+                intent = new Intent(activity, AdminHomeActivity.class);
                 break;
             case "HR":
                 intent = new Intent(activity, HRActivity.class);
