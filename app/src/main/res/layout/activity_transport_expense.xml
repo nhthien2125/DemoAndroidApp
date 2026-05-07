@@ -4,7 +4,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/fn_bg">
+    android:background="@color/fn_bg"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent">
 
     <!-- Header (Giữ nguyên phần top) -->
     <ImageView
@@ -67,16 +69,21 @@
 
     <LinearLayout
         android:id="@+id/llFilters"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="16dp"
         android:layout_marginTop="16dp"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/tvTotalExpense"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
         <Spinner
             android:id="@+id/spFilter"
             android:layout_width="100dp"
             android:layout_height="40dp"
             android:background="@drawable/fn_card_bg" />
+
         <EditText
             android:id="@+id/etSearch"
             android:layout_width="0dp"
