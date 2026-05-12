@@ -30,7 +30,7 @@
                 android:title="Chi vận chuyển" />
             <item
                 android:id="@+id/menu_expense_project"
-                android:title="Chi dự án" />
+                android:title="Thống kê" />
         </menu>
     </item>
 

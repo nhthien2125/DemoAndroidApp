@@ -1,33 +1,37 @@
 package com.neith.subjectdemo.admin;
 
-import android.content.Intent;
-import android.content.res.ColorStateList;
+import android.app.DatePickerDialog;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.Gravity;
-import android.view.View;
-import android.view.animation.OvershootInterpolator;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.neith.subjectdemo.R;
 import com.neith.subjectdemo.helper.BottomNav;
 import com.neith.subjectdemo.helper.DB;
-import com.neith.subjectdemo.hr.HRActivity;
 
-import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
 import java.util.Locale;
 
 public class AdminHomeActivity extends AppCompatActivity {
 
     SQLiteDatabase db;
-    LinearLayout layoutBody;
+
+    EditText edtFrom, edtTo;
+    Button btnThongKe, btnReset, btnRefresh;
+    LinearLayout layoutList;
 
     final int TEXT = Color.parseColor("#E5E7EB");
     final int SUB = Color.parseColor("#CBD5F5");
@@ -38,199 +42,547 @@ public class AdminHomeActivity extends AppCompatActivity {
     final int BLUE = Color.parseColor("#3B82F6");
     final int PURPLE = Color.parseColor("#A855F7");
 
+    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_home);
 
         db = DB.openDatabase(this);
-        layoutBody = findViewById(R.id.layoutAdminHomeBody);
+
+        edtFrom = findViewById(R.id.edtFrom);
+        edtTo = findViewById(R.id.edtTo);
+        btnThongKe = findViewById(R.id.btnThongKe);
+        btnReset = findViewById(R.id.btnResetAdminHome);
+        btnRefresh = findViewById(R.id.btnRefreshAdminHome);
+        layoutList = findViewById(R.id.layoutAdminHomeList);
+
+        btnThongKe.setBackgroundTintList(null);
+        btnReset.setBackgroundTintList(null);
+        btnRefresh.setBackgroundTintList(null);
 
         LinearLayout bottomNavContainer = findViewById(R.id.bottomNavContainer);
         BottomNav.setupAdmin(this, bottomNavContainer, BottomNav.ADMIN_HOME);
-        loadHome();
+
+        setDefaultDateRange();
+
+        edtFrom.setOnClickListener(v -> showDatePicker(edtFrom));
+        edtTo.setOnClickListener(v -> showDatePicker(edtTo));
+
+        btnThongKe.setOnClickListener(v -> loadThongKe());
+        btnRefresh.setOnClickListener(v -> loadThongKe());
+
+        btnReset.setOnClickListener(v -> {
+            setDefaultDateRange();
+            loadThongKe();
+        });
+
+        loadThongKe();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        loadHome();
+        loadThongKe();
     }
 
-    private void loadHome() {
-        layoutBody.removeAllViews();
+    private void setDefaultDateRange() {
+        Calendar cal = Calendar.getInstance();
 
-        buildSummaryCard();
-        buildRoleSummaryCard();
-        buildQuickActionCard();
-        buildLatestLogCard();
+        edtTo.setText(dateFormat.format(cal.getTime()));
+
+        cal.add(Calendar.DAY_OF_MONTH, -30);
+        edtFrom.setText(dateFormat.format(cal.getTime()));
     }
 
-    private void buildSummaryCard() {
+    private void showDatePicker(EditText edt) {
+        Calendar calendar = Calendar.getInstance();
+
+        DatePickerDialog dialog = new DatePickerDialog(
+                this,
+                (view, year, month, dayOfMonth) -> {
+                    String date = String.format(
+                            Locale.getDefault(),
+                            "%04d-%02d-%02d",
+                            year,
+                            month + 1,
+                            dayOfMonth
+                    );
+
+                    edt.setText(date);
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+        );
+
+        dialog.show();
+    }
+
+    private void loadThongKe() {
+        if (db == null || !db.isOpen()) {
+            Toast.makeText(this, "Không mở được cơ sở dữ liệu.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String from = edtFrom.getText().toString().trim();
+        String to = edtTo.getText().toString().trim();
+
+        if (from.isEmpty() || to.isEmpty()) {
+            Toast.makeText(this, "Vui lòng chọn đủ từ ngày và đến ngày.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        layoutList.removeAllViews();
+
+        buildSummaryCard(from, to);
+        buildCandidateCard(from, to);
+        buildNewEmployeeCard(from, to);
+        buildPromotionEmployeeCard(from, to);
+        buildProjectStartCard(from, to);
+    }
+
+    private void buildSummaryCard(String from, String to) {
         LinearLayout card = makeCard();
-        card.addView(makeCardTitle("TỔNG QUAN HỆ THỐNG"));
+        card.addView(makeCardTitle("TỔNG QUAN THỐNG KÊ"));
 
-        int userCount = getInt("SELECT COUNT(*) FROM USERS", null);
-        int authCount = getInt("SELECT COUNT(*) FROM CONFIRMAUTH", null);
-        int employeeCount = getInt("SELECT COUNT(*) FROM NHANVIEN", null);
-        int unassigned = getInt(
-                "SELECT COUNT(*) FROM NHANVIEN WHERE MANV NOT IN (SELECT CODE FROM CONFIRMAUTH WHERE CODE IS NOT NULL)",
-                null
+        int candidateCount = getCandidateInRange(from, to).size();
+
+        int newEmployeeCount = getInt(
+                "SELECT COUNT(*) FROM ACTIVITY_LOG " +
+                        "WHERE ActionCode = 'Add' " +
+                        "AND ActionTime BETWEEN ? AND ?",
+                new String[]{from + " 00:00:00", to + " 23:59:59"}
+        );
+
+        int promotionCount = getInt(
+                "SELECT COUNT(*) FROM ACTIVITY_LOG " +
+                        "WHERE ActionCode = 'Up' " +
+                        "AND ActionTime BETWEEN ? AND ?",
+                new String[]{from + " 00:00:00", to + " 23:59:59"}
+        );
+
+        int projectCount = getInt(
+                "SELECT COUNT(*) FROM HOPDONG " +
+                        "WHERE NGAYBD BETWEEN ? AND ?",
+                new String[]{from, to}
         );
 
         LinearLayout row1 = new LinearLayout(this);
         row1.setOrientation(LinearLayout.HORIZONTAL);
-        row1.addView(makeStatBox("Tài khoản", String.valueOf(userCount), "USERS", PRIMARY), halfLp(true));
-        row1.addView(makeStatBox("Mã quyền", String.valueOf(authCount), "CONFIRMAUTH", BLUE), halfLp(false));
+        row1.addView(makeStatBox("Ứng viên", String.valueOf(candidateCount), "Trong khoảng lọc", BLUE), halfLp(true));
+        row1.addView(makeStatBox("NV mới", String.valueOf(newEmployeeCount), "ActionCode = Add", GREEN), halfLp(false));
 
         LinearLayout row2 = new LinearLayout(this);
         row2.setOrientation(LinearLayout.HORIZONTAL);
         row2.setPadding(0, dp(10), 0, 0);
-        row2.addView(makeStatBox("Nhân viên", String.valueOf(employeeCount), "Toàn hệ thống", GREEN), halfLp(true));
-        row2.addView(makeStatBox("Chưa có quyền", String.valueOf(unassigned), "Có thể tạo account", ORANGE), halfLp(false));
+        row2.addView(makeStatBox("Thăng chức", String.valueOf(promotionCount), "ActionCode = Up", ORANGE), halfLp(true));
+        row2.addView(makeStatBox("Dự án", String.valueOf(projectCount), "Theo HOPDONG.NGAYBD", PRIMARY), halfLp(false));
 
         card.addView(row1);
         card.addView(row2);
 
-        layoutBody.addView(card);
+        layoutList.addView(card);
     }
 
-    private void buildRoleSummaryCard() {
+    private void buildCandidateCard(String from, String to) {
         LinearLayout card = makeCard();
-        card.addView(makeCardTitle("PHÂN BỔ QUYỀN"));
+        card.addView(makeCardTitle("1. DANH SÁCH ỨNG VIÊN TRONG KHOẢNG LỌC"));
 
-        card.addView(makeRoleRow("AD", "Admin", getRoleCount("AD"), PRIMARY));
-        card.addView(makeRoleRow("HR", "Quản lý nhân sự", getRoleCount("HR"), GREEN));
-        card.addView(makeRoleRow("FN", "Quản lý tài chính", getRoleCount("FN"), BLUE));
-        card.addView(makeRoleRow("OF", "Quản lý văn phòng", getRoleCount("OF"), PURPLE));
-        card.addView(makeRoleRow("EM", "Nhân viên", getRoleCount("EM"), ORANGE));
+        ArrayList<CandidateItem> list = getCandidateInRange(from, to);
 
-        layoutBody.addView(card);
-    }
-
-    private void buildQuickActionCard() {
-        LinearLayout card = makeCard();
-        card.addView(makeCardTitle("ĐIỀU HƯỚNG NHANH"));
-
-        card.addView(makeActionButton("Quản lý tài khoản & phân quyền", "Tạo quyền, đổi role, reset mật khẩu, xóa tài khoản.", BLUE, v -> {
-            startActivity(new Intent(this, AdminRoleActivity.class));
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-        }));
-
-        card.addView(makeActionButton("Nhật ký hoạt động", "Xem ACTIVITY_LOG theo action, user và khoảng ngày.", GREEN, v -> {
-            startActivity(new Intent(this, AdminActivityLogActivity.class));
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-        }));
-
-        card.addView(makeActionButton("Về trang HR", "Mở lại trang quản lý nhân sự hiện có.", PRIMARY, v -> {
-            startActivity(new Intent(this, HRActivity.class));
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-        }));
-
-        layoutBody.addView(card);
-    }
-
-    private void buildLatestLogCard() {
-        LinearLayout card = makeCard();
-        card.addView(makeCardTitle("HOẠT ĐỘNG GẦN ĐÂY"));
-
-        Cursor c = db.rawQuery(
-                "SELECT IFNULL(ActionCode, ''), IFNULL(ActionTime, ''), IFNULL(PerformedBy, ''), IFNULL(Description, '') " +
-                        "FROM ACTIVITY_LOG ORDER BY ActionTime DESC, LogID DESC LIMIT 5",
-                null
-        );
-
-        if (c.getCount() == 0) {
-            TextView empty = makeText("Chưa có nhật ký hoạt động.", 13, SUB, false);
-            empty.setGravity(Gravity.CENTER);
-            empty.setPadding(0, dp(16), 0, dp(16));
-            card.addView(empty);
+        if (list.isEmpty()) {
+            card.addView(makeEmptyText("Không có ứng viên trong khoảng thời gian này."));
         } else {
-            while (c.moveToNext()) {
-                card.addView(makeLogMiniRow(
-                        c.getString(0),
-                        c.getString(1),
-                        c.getString(2),
-                        c.getString(3)
-                ));
+            TextView note = makeText(
+                    "Thời gian ứng viên được lấy từ cột thời gian nếu bảng có cột NGAYNOP / THOIGIANNOP / CreatedAt. Nếu chưa có, hệ thống tự lấy ngày từ tên file dạng _yyyyMMdd.",
+                    12,
+                    SUB,
+                    false
+            );
+            note.setPadding(0, 0, 0, dp(10));
+            card.addView(note);
+
+            for (CandidateItem item : list) {
+                LinearLayout box = makeInnerBox();
+
+                box.addView(makeText("#" + item.id + " • " + emptyText(item.name), 15, TEXT, true));
+                box.addView(makeSmallLine("Thời gian", emptyText(item.time)));
+                box.addView(makeSmallLine("Email", emptyText(item.email)));
+                box.addView(makeSmallLine("File thông tin", hasFile(item.fileInfo)));
+                box.addView(makeSmallLine("File bằng cấp", hasFile(item.fileBangCap)));
+                box.addView(makeSmallLine("File khác", hasFile(item.fileKhac)));
+
+                card.addView(box);
+            }
+        }
+
+        layoutList.addView(card);
+    }
+
+    private ArrayList<CandidateItem> getCandidateInRange(String from, String to) {
+        ArrayList<CandidateItem> list = new ArrayList<>();
+
+        String timeColumn = getCandidateTimeColumn();
+
+        String sql;
+
+        if (timeColumn.isEmpty()) {
+            sql = "SELECT ID, IFNULL(TENUNGVIEN, ''), IFNULL(EMAIL, ''), " +
+                    "IFNULL(FILETHONGTIN, ''), IFNULL(FILEBANGCAP, ''), IFNULL(FILEKHAC, '') " +
+                    "FROM HOSOVIECLAM";
+        } else {
+            sql = "SELECT ID, IFNULL(TENUNGVIEN, ''), IFNULL(EMAIL, ''), " +
+                    "IFNULL(FILETHONGTIN, ''), IFNULL(FILEBANGCAP, ''), IFNULL(FILEKHAC, ''), " +
+                    "IFNULL(" + timeColumn + ", '') " +
+                    "FROM HOSOVIECLAM " +
+                    "WHERE substr(" + timeColumn + ", 1, 10) BETWEEN ? AND ? " +
+                    "ORDER BY " + timeColumn + " DESC";
+        }
+
+        Cursor c;
+
+        if (timeColumn.isEmpty()) {
+            c = db.rawQuery(sql, null);
+        } else {
+            c = db.rawQuery(sql, new String[]{from, to});
+        }
+
+        while (c.moveToNext()) {
+            CandidateItem item = new CandidateItem();
+
+            item.id = c.getString(0);
+            item.name = c.getString(1);
+            item.email = c.getString(2);
+            item.fileInfo = c.getString(3);
+            item.fileBangCap = c.getString(4);
+            item.fileKhac = c.getString(5);
+
+            if (timeColumn.isEmpty()) {
+                item.time = extractDateFromCandidateFiles(item.fileInfo, item.fileBangCap, item.fileKhac);
+            } else {
+                item.time = normalizeDateText(c.getString(6));
+            }
+
+            if (!item.time.isEmpty() && item.time.compareTo(from) >= 0 && item.time.compareTo(to) <= 0) {
+                list.add(item);
             }
         }
 
         c.close();
-        layoutBody.addView(card);
+
+        Collections.sort(list, (a, b) -> b.time.compareTo(a.time));
+
+        return list;
     }
 
-    private LinearLayout makeRoleRow(String code, String name, int count, int color) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(0, dp(8), 0, dp(8));
+    private String getCandidateTimeColumn() {
+        if (hasColumn("HOSOVIECLAM", "NGAYNOP")) {
+            return "NGAYNOP";
+        }
 
-        TextView left = makeText(code + " • " + name, 13, color, true);
-        TextView right = makeText(count + " tài khoản", 13, TEXT, true);
-        right.setGravity(Gravity.RIGHT);
+        if (hasColumn("HOSOVIECLAM", "THOIGIANNOP")) {
+            return "THOIGIANNOP";
+        }
 
-        row.addView(left, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        row.addView(right, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        if (hasColumn("HOSOVIECLAM", "CreatedAt")) {
+            return "CreatedAt";
+        }
 
-        return row;
+        if (hasColumn("HOSOVIECLAM", "CREATEDAT")) {
+            return "CREATEDAT";
+        }
+
+        return "";
     }
 
-    private View makeActionButton(String title, String sub, int color, View.OnClickListener listener) {
-        LinearLayout box = new LinearLayout(this);
-        box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(dp(12), dp(10), dp(12), dp(10));
-        box.setBackgroundResource(R.drawable.employee_input_bg);
-        box.setClickable(true);
-        box.setFocusable(true);
-        box.setOnClickListener(v -> {
-            animateClick(box);
-            listener.onClick(v);
-        });
+    private void buildNewEmployeeCard(String from, String to) {
+        LinearLayout card = makeCard();
+        card.addView(makeCardTitle("2. DANH SÁCH NHÂN VIÊN MỚI VÀO TRONG KHOẢNG LỌC"));
 
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+        Cursor c = db.rawQuery(
+                "SELECT LogID, ActionTime, PerformedBy, Description " +
+                        "FROM ACTIVITY_LOG " +
+                        "WHERE ActionCode = 'Add' " +
+                        "AND ActionTime BETWEEN ? AND ? " +
+                        "ORDER BY ActionTime DESC",
+                new String[]{from + " 00:00:00", to + " 23:59:59"}
         );
-        lp.setMargins(0, 0, 0, dp(10));
-        box.setLayoutParams(lp);
 
-        box.addView(makeText(title, 15, color, true));
-        TextView s = makeText(sub, 12, SUB, false);
-        s.setPadding(0, dp(3), 0, 0);
-        box.addView(s);
+        if (c.getCount() == 0) {
+            card.addView(makeEmptyText("Không có log thêm nhân viên trong khoảng thời gian này."));
+        } else {
+            while (c.moveToNext()) {
+                String logId = c.getString(0);
+                String actionTime = c.getString(1);
+                String performedBy = c.getString(2);
+                String description = c.getString(3);
+                String maNV = extractLastWord(description);
 
-        return box;
+                EmployeeItem emp = getEmployeeByCode(maNV);
+
+                LinearLayout box = makeInnerBox();
+
+                box.addView(makeText("Log #" + logId + " • " + maNV, 15, GREEN, true));
+                box.addView(makeSmallLine("Thời gian", emptyText(actionTime)));
+                box.addView(makeSmallLine("Người thực hiện", emptyText(performedBy)));
+                box.addView(makeSmallLine("Mô tả log", emptyText(description)));
+
+                if (emp == null) {
+                    box.addView(makeSmallLine("Thông tin NV", "Không tìm thấy trong bảng NHANVIEN"));
+                } else {
+                    box.addView(makeSmallLine("Họ tên", emptyText(emp.fullName)));
+                    box.addView(makeSmallLine("Năm sinh", emptyText(emp.birthYear)));
+                    box.addView(makeSmallLine("Giới tính", formatGender(emp.gender)));
+                    box.addView(makeSmallLine("Phòng ban", emptyText(emp.departmentCode) + " • " + emptyText(emp.departmentName)));
+                    box.addView(makeSmallLine("Chức vụ", emptyText(emp.positionCode) + " • " + emptyText(emp.positionName)));
+                    box.addView(makeSmallLine("Doanh nghiệp", emptyText(emp.businessCode) + " • " + emptyText(emp.businessName)));
+                }
+
+                card.addView(box);
+            }
+        }
+
+        c.close();
+        layoutList.addView(card);
     }
 
-    private View makeLogMiniRow(String action, String time, String user, String desc) {
-        LinearLayout box = new LinearLayout(this);
-        box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(dp(12), dp(9), dp(12), dp(9));
-        box.setBackgroundResource(R.drawable.employee_input_bg);
+    private void buildPromotionEmployeeCard(String from, String to) {
+        LinearLayout card = makeCard();
+        card.addView(makeCardTitle("3. DANH SÁCH NHÂN VIÊN THĂNG CHỨC TRONG KHOẢNG LỌC"));
 
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+        Cursor c = db.rawQuery(
+                "SELECT LogID, ActionTime, PerformedBy, Description " +
+                        "FROM ACTIVITY_LOG " +
+                        "WHERE ActionCode = 'Up' " +
+                        "AND ActionTime BETWEEN ? AND ? " +
+                        "ORDER BY ActionTime DESC",
+                new String[]{from + " 00:00:00", to + " 23:59:59"}
         );
-        lp.setMargins(0, 0, 0, dp(8));
-        box.setLayoutParams(lp);
 
-        box.addView(makeText(action + " • " + user, 13, PRIMARY, true));
-        box.addView(makeText(time, 11, SUB, false));
+        if (c.getCount() == 0) {
+            card.addView(makeEmptyText("Không có log thăng chức trong khoảng thời gian này."));
+        } else {
+            while (c.moveToNext()) {
+                String logId = c.getString(0);
+                String actionTime = c.getString(1);
+                String performedBy = c.getString(2);
+                String description = c.getString(3);
+                String maNV = extractLastWord(description);
 
-        TextView d = makeText(desc, 12, TEXT, false);
-        d.setPadding(0, dp(3), 0, 0);
-        box.addView(d);
+                EmployeeItem emp = getEmployeeByCode(maNV);
 
-        return box;
+                LinearLayout box = makeInnerBox();
+
+                box.addView(makeText("Log #" + logId + " • " + maNV, 15, ORANGE, true));
+                box.addView(makeSmallLine("Thời gian", emptyText(actionTime)));
+                box.addView(makeSmallLine("Người thực hiện", emptyText(performedBy)));
+                box.addView(makeSmallLine("Mô tả log", emptyText(description)));
+
+                if (emp == null) {
+                    box.addView(makeSmallLine("Thông tin NV", "Không tìm thấy trong bảng NHANVIEN"));
+                } else {
+                    box.addView(makeSmallLine("Họ tên", emptyText(emp.fullName)));
+                    box.addView(makeSmallLine("Phòng ban hiện tại", emptyText(emp.departmentCode) + " • " + emptyText(emp.departmentName)));
+                    box.addView(makeSmallLine("Mã trưởng phòng", emptyText(emp.managerCode)));
+                    box.addView(makeSmallLine("Địa điểm phòng ban", emptyText(emp.departmentLocation)));
+                    box.addView(makeSmallLine("Chức vụ hiện tại", emptyText(emp.positionCode) + " • " + emptyText(emp.positionName)));
+                    box.addView(makeSmallLine("Hệ số lương chức vụ", emptyText(emp.salaryCoefficient)));
+                }
+
+                card.addView(box);
+            }
+        }
+
+        c.close();
+        layoutList.addView(card);
     }
 
-    private int getRoleCount(String prefix) {
-        return getInt(
-                "SELECT COUNT(*) FROM USERS WHERE UPPER(SUBSTR(IFNULL(AUTH, ''), 1, 2)) = ?",
-                new String[]{prefix}
+    private EmployeeItem getEmployeeByCode(String maNV) {
+        if (maNV == null || maNV.trim().isEmpty()) {
+            return null;
+        }
+
+        Cursor c = db.rawQuery(
+                "SELECT NV.MANV, " +
+                        "IFNULL(NV.HOLOT, '') || ' ' || IFNULL(NV.TENNV, '') AS HOTEN, " +
+                        "IFNULL(NV.NAMSINH, ''), IFNULL(NV.GIOITINH, ''), " +
+                        "IFNULL(NV.MAPB, ''), IFNULL(PB.TENPB, ''), IFNULL(PB.MATRG_PHG, ''), IFNULL(PB.DIADIEM, ''), " +
+                        "IFNULL(NV.MACV, ''), IFNULL(CV.TENCV, ''), IFNULL(CV.HESOLUONG, ''), " +
+                        "IFNULL(NV.MADN, ''), IFNULL(DN.TENDN, '') " +
+                        "FROM NHANVIEN NV " +
+                        "LEFT JOIN PHONGBAN PB ON NV.MAPB = PB.MAPB " +
+                        "LEFT JOIN VITRICONGVIEC CV ON NV.MACV = CV.MACV " +
+                        "LEFT JOIN THONGTINDOANHNGHIEP DN ON NV.MADN = DN.MADN " +
+                        "WHERE NV.MANV = ? " +
+                        "LIMIT 1",
+                new String[]{maNV}
         );
+
+        EmployeeItem item = null;
+
+        if (c.moveToFirst()) {
+            item = new EmployeeItem();
+            item.employeeCode = c.getString(0);
+            item.fullName = c.getString(1).trim();
+            item.birthYear = c.getString(2);
+            item.gender = c.getString(3);
+            item.departmentCode = c.getString(4);
+            item.departmentName = c.getString(5);
+            item.managerCode = c.getString(6);
+            item.departmentLocation = c.getString(7);
+            item.positionCode = c.getString(8);
+            item.positionName = c.getString(9);
+            item.salaryCoefficient = c.getString(10);
+            item.businessCode = c.getString(11);
+            item.businessName = c.getString(12);
+        }
+
+        c.close();
+
+        return item;
+    }
+
+    private void buildProjectStartCard(String from, String to) {
+        LinearLayout card = makeCard();
+        card.addView(makeCardTitle("4. DỰ ÁN / HỢP ĐỒNG BẮT ĐẦU TRONG KHOẢNG LỌC"));
+
+        Cursor c = db.rawQuery(
+                "SELECT MAHD, IFNULL(TENHD, ''), IFNULL(LOAI, ''), " +
+                        "IFNULL(NGAYBD, ''), IFNULL(NGAYKT_DUTINH, '') " +
+                        "FROM HOPDONG " +
+                        "WHERE NGAYBD BETWEEN ? AND ? " +
+                        "ORDER BY NGAYBD DESC",
+                new String[]{from, to}
+        );
+
+        if (c.getCount() == 0) {
+            card.addView(makeEmptyText("Không có hợp đồng bắt đầu trong khoảng thời gian này."));
+        } else {
+            while (c.moveToNext()) {
+                String maHD = c.getString(0);
+                String tenHD = c.getString(1);
+                String loai = c.getString(2);
+                String ngayBD = c.getString(3);
+                String ngayKT = c.getString(4);
+
+                LinearLayout box = makeInnerBox();
+
+                box.addView(makeText(maHD + " • " + emptyText(tenHD), 15, PRIMARY, true));
+                box.addView(makeSmallLine("Loại hợp đồng", emptyText(loai)));
+                box.addView(makeSmallLine("Ngày bắt đầu", emptyText(ngayBD)));
+                box.addView(makeSmallLine("Ngày kết thúc dự tính", emptyText(ngayKT)));
+
+                card.addView(box);
+            }
+        }
+
+        c.close();
+        layoutList.addView(card);
+    }
+
+    private String extractLastWord(String text) {
+        if (text == null) {
+            return "";
+        }
+
+        text = text.trim();
+
+        if (text.isEmpty()) {
+            return "";
+        }
+
+        String[] arr = text.split("\\s+");
+        return arr[arr.length - 1].trim();
+    }
+
+    private String extractDateFromCandidateFiles(String fileInfo, String fileBangCap, String fileKhac) {
+        String date = extractDateFromFileName(fileInfo);
+
+        if (!date.isEmpty()) {
+            return date;
+        }
+
+        date = extractDateFromFileName(fileBangCap);
+
+        if (!date.isEmpty()) {
+            return date;
+        }
+
+        return extractDateFromFileName(fileKhac);
+    }
+
+    private String extractDateFromFileName(String fileName) {
+        if (fileName == null) {
+            return "";
+        }
+
+        String text = fileName.trim();
+
+        if (text.isEmpty()) {
+            return "";
+        }
+
+        for (int i = 0; i <= text.length() - 8; i++) {
+            String part = text.substring(i, i + 8);
+
+            if (part.matches("\\d{8}")) {
+                String year = part.substring(0, 4);
+                String month = part.substring(4, 6);
+                String day = part.substring(6, 8);
+
+                return year + "-" + month + "-" + day;
+            }
+        }
+
+        return "";
+    }
+
+    private String normalizeDateText(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        value = value.trim();
+
+        if (value.length() >= 10) {
+            return value.substring(0, 10);
+        }
+
+        return value;
+    }
+
+    private boolean hasColumn(String tableName, String columnName) {
+        Cursor c = db.rawQuery("PRAGMA table_info(" + tableName + ")", null);
+
+        boolean exists = false;
+
+        while (c.moveToNext()) {
+            String name = c.getString(1);
+
+            if (name != null && name.equalsIgnoreCase(columnName)) {
+                exists = true;
+                break;
+            }
+        }
+
+        c.close();
+
+        return exists;
+    }
+
+    private int getInt(String sql, String[] args) {
+        Cursor c = db.rawQuery(sql, args);
+        int value = 0;
+
+        if (c.moveToFirst()) {
+            value = c.getInt(0);
+        }
+
+        c.close();
+
+        return value;
     }
 
     private LinearLayout makeCard() {
@@ -249,10 +601,42 @@ public class AdminHomeActivity extends AppCompatActivity {
         return card;
     }
 
+    private LinearLayout makeInnerBox() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(12), dp(10), dp(12), dp(10));
+        box.setBackgroundResource(R.drawable.employee_input_bg);
+
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        lp.setMargins(0, 0, 0, dp(10));
+        box.setLayoutParams(lp);
+
+        return box;
+    }
+
     private TextView makeCardTitle(String text) {
         TextView tv = makeText(text, 13, PRIMARY, true);
         tv.setPadding(0, 0, 0, dp(10));
         return tv;
+    }
+
+    private LinearLayout makeSmallLine(String label, String value) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setPadding(0, dp(4), 0, 0);
+
+        TextView l = makeText(label, 11, SUB, false);
+        TextView v = makeText(value, 11, TEXT, false);
+        v.setGravity(Gravity.RIGHT);
+        v.setSingleLine(false);
+
+        row.addView(l, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        row.addView(v, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+
+        return row;
     }
 
     private LinearLayout makeStatBox(String label, String value, String note, int color) {
@@ -284,16 +668,11 @@ public class AdminHomeActivity extends AppCompatActivity {
         return lp;
     }
 
-    private int getInt(String sql, String[] args) {
-        Cursor c = db.rawQuery(sql, args);
-        int value = 0;
-
-        if (c.moveToFirst()) {
-            value = c.getInt(0);
-        }
-
-        c.close();
-        return value;
+    private TextView makeEmptyText(String text) {
+        TextView tv = makeText(text, 14, SUB, false);
+        tv.setGravity(Gravity.CENTER);
+        tv.setPadding(0, dp(18), 0, dp(18));
+        return tv;
     }
 
     private TextView makeText(String text, int sp, int color, boolean bold) {
@@ -310,23 +689,61 @@ public class AdminHomeActivity extends AppCompatActivity {
         return tv;
     }
 
-    private void animateClick(View view) {
-        view.animate()
-                .scaleX(0.97f)
-                .scaleY(0.97f)
-                .alpha(0.85f)
-                .setDuration(80)
-                .withEndAction(() -> view.animate()
-                        .scaleX(1f)
-                        .scaleY(1f)
-                        .alpha(1f)
-                        .setInterpolator(new OvershootInterpolator())
-                        .setDuration(190)
-                        .start())
-                .start();
+    private String emptyText(String value) {
+        return value == null || value.trim().isEmpty() || value.equalsIgnoreCase("null") ? "—" : value;
+    }
+
+    private String hasFile(String value) {
+        return value == null || value.trim().isEmpty() || value.equalsIgnoreCase("null") ? "Chưa có" : "Đã tải";
+    }
+
+    private String formatGender(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return "—";
+        }
+
+        if (value.equals("1")) {
+            return "Nam";
+        }
+
+        if (value.equals("0")) {
+            return "Nữ";
+        }
+
+        return value;
+    }
+
+    private String formatNumber(double value) {
+        return String.format(Locale.getDefault(), "%,.0f", value);
     }
 
     private int dp(int value) {
         return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
+    }
+
+    static class CandidateItem {
+        String id;
+        String name;
+        String email;
+        String fileInfo;
+        String fileBangCap;
+        String fileKhac;
+        String time;
+    }
+
+    static class EmployeeItem {
+        String employeeCode;
+        String fullName;
+        String birthYear;
+        String gender;
+        String departmentCode;
+        String departmentName;
+        String managerCode;
+        String departmentLocation;
+        String positionCode;
+        String positionName;
+        String salaryCoefficient;
+        String businessCode;
+        String businessName;
     }
 }

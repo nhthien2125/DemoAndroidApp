@@ -18,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.neith.subjectdemo.R;
 import com.neith.subjectdemo.helper.DB;
+import com.neith.subjectdemo.helper.ExcelExporter;
 import com.neith.subjectdemo.helper.SessionManager;
 import com.neith.subjectdemo.hr.EmployeeProfileActivity;
 
@@ -45,6 +46,7 @@ public class ServiceRevenueActivity extends AppCompatActivity {
 
         db = DB.openDatabase(this);
 
+        // Lấy thông tin session
         username = getIntent().getStringExtra("USERNAME");
         auth = getIntent().getStringExtra("AUTH");
         findMaNV();
@@ -58,8 +60,7 @@ public class ServiceRevenueActivity extends AppCompatActivity {
 
         ivMenu.setOnClickListener(this::showMenu);
 
-        findViewById(R.id.btnExport).setOnClickListener(v -> 
-                Toast.makeText(this, "Đang chuẩn bị báo cáo...", Toast.LENGTH_SHORT).show());
+        findViewById(R.id.btnExport).setOnClickListener(v -> exportServiceRevenueReport());
 
         loadData();
     }
@@ -155,6 +156,22 @@ public class ServiceRevenueActivity extends AppCompatActivity {
             item.addView(tv);
             glLegend.addView(item);
             i++;
+        }
+    }
+
+    private void exportServiceRevenueReport() {
+        try {
+            String query = "SELECT * FROM DTDICHVU";
+            Cursor cursor = db.rawQuery(query, null);
+            
+            // Get columns dynamically if possible, or use a fixed set if schema is known
+            String[] displayColumns = cursor.getColumnNames();
+            
+            ExcelExporter.exportCursorToExcel(this, cursor, "Service_Revenue_Report", displayColumns);
+            cursor.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Lỗi khi xuất báo cáo: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 

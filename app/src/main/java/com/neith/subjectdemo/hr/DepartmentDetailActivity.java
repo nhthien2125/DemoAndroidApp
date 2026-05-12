@@ -26,6 +26,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.neith.subjectdemo.R;
+import com.neith.subjectdemo.helper.ActivityLogger;
 import com.neith.subjectdemo.helper.DB;
 
 import java.util.Locale;
@@ -514,6 +515,7 @@ public class DepartmentDetailActivity extends AppCompatActivity {
         );
 
         if (rows > 0) {
+            ActivityLogger.log(db, "Up", "hrm", "Thăng chức " + maNV);
             Toast.makeText(this, "Đã thăng chức trưởng phòng.", Toast.LENGTH_SHORT).show();
             loadDetail();
         } else {

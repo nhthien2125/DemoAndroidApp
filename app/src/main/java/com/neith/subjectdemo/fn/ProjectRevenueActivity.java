@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.neith.subjectdemo.R;
 import com.neith.subjectdemo.helper.DB;
+import com.neith.subjectdemo.helper.ExcelExporter;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -36,8 +37,7 @@ public class ProjectRevenueActivity extends AppCompatActivity {
         tvAvgRevenue = findViewById(R.id.tvAvgRevenue);
         combinedChart = findViewById(R.id.combinedChart);
 
-        findViewById(R.id.btnExport).setOnClickListener(v ->
-                Toast.makeText(this, "Đang chuẩn bị báo cáo dự án...", Toast.LENGTH_SHORT).show());
+        findViewById(R.id.btnExport).setOnClickListener(v -> exportProjectRevenueReport());
 
         loadData();
     }
@@ -49,18 +49,15 @@ public class ProjectRevenueActivity extends AppCompatActivity {
         List<Double> marketIndices = new ArrayList<>();
 
         try {
-            // 1. Tổng doanh thu
             Cursor cTotal = db.rawQuery("SELECT SUM(TIENNGHIEMTHU_TONG) FROM DTDUAN", null);
             if (cTotal.moveToFirst()) totalRevenue = cTotal.getDouble(0);
             cTotal.close();
 
-            // 2. Số dự án hoàn thành (Giả định dựa trên ngày kết thúc < hiện tại)
             Cursor cCompleted = db.rawQuery(
                     "SELECT COUNT(*) FROM DUANTHEOHOPDONG WHERE NGAYKT < '2026-03-12'", null);
             if (cCompleted.moveToFirst()) completedProjects = cCompleted.getInt(0);
             cCompleted.close();
 
-            // 3. Doanh thu theo tháng
             Cursor cMonthly = db.rawQuery(
                     "SELECT strftime('%m/%Y', NGAYKT) as month, SUM(TIENNGHIEMTHU_TONG) " +
                             "FROM DUANTHEOHOPDONG DTHD " +
@@ -68,11 +65,10 @@ public class ProjectRevenueActivity extends AppCompatActivity {
                             "GROUP BY month ORDER BY NGAYKT", null
             );
             while (cMonthly.moveToNext()) {
-                monthlyRevenue.put(cMonthly.getString(0), cMonthly.getDouble(1) / 1_000_000_000.0); // Quy đổi ra Billions cho chart
+                monthlyRevenue.put(cMonthly.getString(0), cMonthly.getDouble(1) / 1_000_000_000.0);
             }
             cMonthly.close();
 
-            // 4. Chỉ số thị trường
             Cursor cMarket = db.rawQuery("SELECT HSTHITRUONG FROM BIENDONGTHITRUONG ORDER BY THOIGIAN", null);
             while (cMarket.moveToNext()) {
                 marketIndices.add(cMarket.getDouble(0));
@@ -83,12 +79,10 @@ public class ProjectRevenueActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        // Cập nhật UI
         tvTotalRevenue.setText(formatCurrencyB(totalRevenue));
         tvCompletedCount.setText(String.valueOf(completedProjects));
         tvAvgRevenue.setText(formatCurrencyB(completedProjects > 0 ? totalRevenue / completedProjects : 0));
 
-        // Nếu data trống thì dùng mock data để biểu đồ đẹp hơn như trong ảnh
         if (monthlyRevenue.isEmpty()) {
             monthlyRevenue.put("04/2025", 5.0);
             monthlyRevenue.put("06/2025", 12.0);
@@ -108,6 +102,19 @@ public class ProjectRevenueActivity extends AppCompatActivity {
         }
 
         combinedChart.setData(monthlyRevenue, marketIndices);
+    }
+
+    private void exportProjectRevenueReport() {
+        String query = "SELECT IFNULL(HD.TENHD, DTHD.MADAHD), DTHD.MADAHD, IFNULL(DT.TIENNGHIEMTHU_TONG, 0), DTHD.NGAYKT " +
+                "FROM DUANTHEOHOPDONG DTHD " +
+                "JOIN DTDUAN DT ON DTHD.MADA = DT.MADA " +
+                "JOIN HOPDONG HD ON DTHD.MAHD = HD.MAHD " +
+                "ORDER BY DTHD.NGAYKT DESC";
+        
+        Cursor cursor = db.rawQuery(query, null);
+        String[] columns = {"Tên Dự Án", "Mã Dự Án", "Doanh Thu Thực Tế", "Ngày Kết Thúc"};
+        ExcelExporter.exportCursorToExcel(this, cursor, "Bao_Cao_Doanh_Thu_Du_An", columns);
+        cursor.close();
     }
 
     private String formatCurrencyB(double amount) {

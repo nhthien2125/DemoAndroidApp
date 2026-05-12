@@ -25,6 +25,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.neith.subjectdemo.R;
 import com.neith.subjectdemo.fn.model.TransportExpense;
 import com.neith.subjectdemo.helper.DB;
+import com.neith.subjectdemo.helper.ExcelExporter;
 import com.neith.subjectdemo.helper.SessionManager;
 import com.neith.subjectdemo.hr.EmployeeProfileActivity;
 
@@ -64,8 +65,7 @@ public class TransportExpenseActivity extends AppCompatActivity {
         loadTotalAndData();
 
         findViewById(R.id.ivMenu).setOnClickListener(this::showMenu);
-        findViewById(R.id.btnExport).setOnClickListener(v -> 
-                Toast.makeText(this, "Exporting report...", Toast.LENGTH_SHORT).show());
+        findViewById(R.id.btnExport).setOnClickListener(v -> exportTransportExpenses());
     }
 
     private void findMaNV() {
@@ -97,13 +97,15 @@ public class TransportExpenseActivity extends AppCompatActivity {
     }
 
     private void loadTotalAndData() {
-        // 1. Tính tổng tiền
-        Cursor cSum = db.rawQuery("SELECT SUM(CPVANCHUYEN) FROM VANCHUYENNVL", null);
-        if (cSum.moveToFirst()) {
-            double total = cSum.getDouble(0);
-            tvTotalExpense.setText(formatCurrencyM(total));
-        }
-        cSum.close();
+        try {
+            // Sửa lỗi: Sử dụng CPVC thay vì CPVANCHUYEN
+            Cursor cSum = db.rawQuery("SELECT SUM(CPVC) FROM VANCHUYENNVL", null);
+            if (cSum.moveToFirst()) {
+                double total = cSum.getDouble(0);
+                tvTotalExpense.setText(formatCurrencyM(total));
+            }
+            cSum.close();
+        } catch (Exception e) { e.printStackTrace(); }
 
         loadPage(1);
     }
@@ -116,46 +118,58 @@ public class TransportExpenseActivity extends AppCompatActivity {
         String whereClause = "1=1";
         List<String> args = new ArrayList<>();
         if (!query.isEmpty()) {
-            whereClause += " AND (MAVC LIKE ? OR LNVL LIKE ?)";
+            whereClause += " AND (V.MAVC LIKE ? OR N.TENNVL LIKE ?)";
             args.add("%" + query + "%");
             args.add("%" + query + "%");
         }
         if (!filter.equals("Tất cả")) {
-            whereClause += " AND LNVL LIKE ?";
+            whereClause += " AND N.TENNVL LIKE ?";
             args.add("%" + filter + "%");
         }
 
-        // Đếm tổng bản ghi để tính số trang
-        Cursor cCount = db.rawQuery("SELECT COUNT(*) FROM VANCHUYENNVL WHERE " + whereClause, args.toArray(new String[0]));
-        int totalCount = 0;
-        if (cCount.moveToFirst()) totalCount = cCount.getInt(0);
-        cCount.close();
+        try {
+            // Đếm tổng để phân trang
+            String countSql = "SELECT COUNT(*) FROM VANCHUYENNVL V " +
+                    "LEFT JOIN CPDUAN CP ON V.MAVC = CP.MAVC " +
+                    "LEFT JOIN NHAPNVL N ON CP.MANHAP = N.MANHAP " +
+                    "WHERE " + whereClause;
 
-        totalPages = (int) Math.ceil((double) totalCount / PAGE_SIZE);
-        if (totalPages == 0) totalPages = 1;
-        
-        tvPageInfo.setText("Page " + currentPage + " / " + totalPages);
-        updatePaginationUI();
+            Cursor cCount = db.rawQuery(countSql, args.toArray(new String[0]));
+            int totalCount = 0;
+            if (cCount.moveToFirst()) totalCount = cCount.getInt(0);
+            cCount.close();
 
-        // Lấy dữ liệu trang hiện tại
-        int offset = (currentPage - 1) * PAGE_SIZE;
-        String sql = "SELECT NGAYVC, MAVC, LNVL, MADA, CPVANCHUYEN FROM VANCHUYENNVL WHERE " + whereClause + " LIMIT ? OFFSET ?";
-        args.add(String.valueOf(PAGE_SIZE));
-        args.add(String.valueOf(offset));
+            totalPages = (int) Math.ceil((double) totalCount / PAGE_SIZE);
+            if (totalPages == 0) totalPages = 1;
 
-        expenseList.clear();
-        Cursor c = db.rawQuery(sql, args.toArray(new String[0]));
-        while (c.moveToNext()) {
-            expenseList.add(new TransportExpense(
-                c.getString(0),
-                c.getString(1),
-                c.getString(2),
-                c.getString(3),
-                formatCurrencyK(c.getDouble(4))
-            ));
-        }
-        c.close();
-        adapter.notifyDataSetChanged();
+            tvPageInfo.setText("Page " + currentPage + " / " + totalPages);
+            updatePaginationUI();
+
+            // Lấy dữ liệu JOIN để có MATERIAL và PROJECT
+            int offset = (currentPage - 1) * PAGE_SIZE;
+            String sql = "SELECT V.NGAYVC, V.MAVC, N.TENNVL, CP.MADA, V.CPVC " +
+                    "FROM VANCHUYENNVL V " +
+                    "LEFT JOIN CPDUAN CP ON V.MAVC = CP.MAVC " +
+                    "LEFT JOIN NHAPNVL N ON CP.MANHAP = N.MANHAP " +
+                    "WHERE " + whereClause + " LIMIT ? OFFSET ?";
+
+            args.add(String.valueOf(PAGE_SIZE));
+            args.add(String.valueOf(offset));
+
+            expenseList.clear();
+            Cursor c = db.rawQuery(sql, args.toArray(new String[0]));
+            while (c.moveToNext()) {
+                expenseList.add(new TransportExpense(
+                        c.getString(0),
+                        c.getString(1),
+                        c.getString(2) != null ? c.getString(2) : "N/A",
+                        c.getString(3) != null ? c.getString(3) : "N/A",
+                        formatCurrencyK(c.getDouble(4))
+                ));
+            }
+            c.close();
+            adapter.notifyDataSetChanged();
+        } catch (Exception e) { e.printStackTrace(); }
     }
 
     private void updatePaginationUI() {
@@ -217,6 +231,18 @@ public class TransportExpenseActivity extends AppCompatActivity {
             return false;
         });
         popup.show();
+    }
+
+    private void exportTransportExpenses() {
+        String query = "SELECT V.NGAYVC, V.MAVC, N.TENNVL, CP.MADA, V.CPVC " +
+                "FROM VANCHUYENNVL V " +
+                "LEFT JOIN CPDUAN CP ON V.MAVC = CP.MAVC " +
+                "LEFT JOIN NHAPNVL N ON CP.MANHAP = N.MANHAP";
+        
+        Cursor cursor = db.rawQuery(query, null);
+        String[] columns = {"Ngày VC", "Mã VC", "Vật Liệu", "Mã Dự Án", "Chi Phí"};
+        ExcelExporter.exportCursorToExcel(this, cursor, "Report_Transport_Expenses", columns);
+        cursor.close();
     }
 
     private String formatCurrencyM(double amount) {
