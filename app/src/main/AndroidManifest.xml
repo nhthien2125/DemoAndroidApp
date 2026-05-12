@@ -26,6 +26,8 @@
             android:exported="false" />
         <activity
             android:name=".fn.FNActivity"
+            android:exported="false" />
+        <activity
             android:name=".admin.AdminDataExecuteActivity"
             android:exported="false" />
         <activity
@@ -78,9 +80,6 @@
             android:exported="false" />
         <activity
             android:name=".auth.SignUp"
-            android:exported="false" />
-        <activity
-            android:name=".fn.FNActivity"
             android:exported="false" />
         <activity
             android:name=".admin.AdminHomeActivity"

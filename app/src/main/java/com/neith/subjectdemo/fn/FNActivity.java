@@ -26,6 +26,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.neith.subjectdemo.R;
 import com.neith.subjectdemo.fn.model.ProjectHighlight;
 import com.neith.subjectdemo.helper.DB;
+import com.neith.subjectdemo.helper.ExcelExporter;
 import com.neith.subjectdemo.helper.SessionManager;
 import com.neith.subjectdemo.hr.EmployeeProfileActivity;
 
@@ -88,7 +89,7 @@ public class FNActivity extends AppCompatActivity {
 
         ivMenu.setOnClickListener(this::showMenu);
 
-        btnExport.setOnClickListener(v -> Toast.makeText(this, "Đang chuẩn bị báo cáo Excel...", Toast.LENGTH_SHORT).show());
+        btnExport.setOnClickListener(v -> exportProjectHighlights());
     }
 
     private void findMaNV() {
@@ -142,17 +143,22 @@ public class FNActivity extends AppCompatActivity {
                 SessionManager.logout(this);
                 return true;
             } else if (id == R.id.menu_expense_transport) {
-                // Mở màn hình Chi phí vận chuyển vừa tạo
                 Intent intent = new Intent(this, TransportExpenseActivity.class);
                 intent.putExtra("USERNAME", username);
                 intent.putExtra("AUTH", auth);
                 startActivity(intent);
                 return true;
             } else if (id == R.id.menu_revenue_project) {
-                startActivity(new Intent(this, ProjectRevenueActivity.class));
+                Intent intent = new Intent(this, ProjectRevenueActivity.class);
+                intent.putExtra("USERNAME", username);
+                intent.putExtra("AUTH", auth);
+                startActivity(intent);
                 return true;
             } else if (id == R.id.menu_revenue_service) {
-                startActivity(new Intent(this, ServiceRevenueActivity.class));
+                Intent intent = new Intent(this, ServiceRevenueActivity.class);
+                intent.putExtra("USERNAME", username);
+                intent.putExtra("AUTH", auth);
+                startActivity(intent);
                 return true;
             }
             return false;
@@ -193,7 +199,9 @@ public class FNActivity extends AppCompatActivity {
                 serviceCount = cService.getInt(1);
             }
             cService.close();
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         double totalEarning = projectRev + serviceRev;
         tvTotalEarning.setText(formatCurrency(totalEarning));
@@ -221,6 +229,18 @@ public class FNActivity extends AppCompatActivity {
 
         adapter = new ProjectHighlightAdapter(data);
         rvProjects.setAdapter(adapter);
+    }
+
+    private void exportProjectHighlights() {
+        String query = "SELECT IFNULL(HD.TENHD, DTHD.MADAHD), DTHD.MADAHD, IFNULL(DT.TIENNGHIEMTHU_TONG, 0), " +
+                "IFNULL((SELECT SUM(CHIPHITONG) FROM CPDUAN WHERE MADA = DTHD.MADA), 0) " +
+                "FROM DUANTHEOHOPDONG DTHD JOIN DUAN DA ON DTHD.MADA = DA.MADA JOIN HOPDONG HD ON DTHD.MAHD = HD.MAHD " +
+                "LEFT JOIN DTDUAN DT ON DA.MADA = DT.MADA ORDER BY DT.TIENNGHIEMTHU_TONG DESC";
+        
+        Cursor cursor = db.rawQuery(query, null);
+        String[] columns = {"Tên Dự Án", "Mã Dự Án", "Doanh Thu", "Chi Phí"};
+        ExcelExporter.exportCursorToExcel(this, cursor, "Finance_Dashboard_Projects", columns);
+        cursor.close();
     }
 
     private String formatCurrency(double amount) {

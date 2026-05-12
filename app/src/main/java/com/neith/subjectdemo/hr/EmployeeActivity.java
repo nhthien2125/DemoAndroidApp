@@ -1191,7 +1191,7 @@ public class EmployeeActivity extends AppCompatActivity {
             }
 
             db.setTransactionSuccessful();
-            ActivityLogger.log(db, "CREATE_EMPLOYEE", "HR", "Đã thêm nhân viên: " + maNV + " - " + hoLot + " " + ten + " vào phòng " + maPB);
+            ActivityLogger.log(db, "Add", "HR", "Đã thêm nhân viên: " + maNV);
             Toast.makeText(this, "Đã thêm nhân viên: " + maNV, Toast.LENGTH_SHORT).show();
 
         } catch (Exception e) {

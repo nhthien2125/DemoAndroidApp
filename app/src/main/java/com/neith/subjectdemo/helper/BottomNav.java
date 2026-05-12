@@ -14,17 +14,16 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.neith.subjectdemo.R;
-import com.neith.subjectdemo.fn.FNActivity;
 import com.neith.subjectdemo.admin.AdminActivityLogActivity;
+import com.neith.subjectdemo.admin.AdminDataActivity;
 import com.neith.subjectdemo.admin.AdminHomeActivity;
 import com.neith.subjectdemo.admin.AdminRoleActivity;
-import com.neith.subjectdemo.admin.AdminDataActivity;
+import com.neith.subjectdemo.fn.FNActivity;
 import com.neith.subjectdemo.hr.DepartmentActivity;
 import com.neith.subjectdemo.hr.EmployeeActivity;
 import com.neith.subjectdemo.hr.HRActivity;
 import com.neith.subjectdemo.hr.ProjectActivity;
 import com.neith.subjectdemo.hr.WorkScheduleActivity;
-import com.neith.subjectdemo.fn.FNActivity;
 
 public class BottomNav {
 
@@ -116,11 +115,6 @@ public class BottomNav {
         text.setAlpha(selected ? 1f : 0.6f);
         text.setTextSize(selected ? 12 : 11);
         text.setTypeface(null, selected ? Typeface.BOLD : Typeface.NORMAL);
-        item.addView(text);
-
-        item.setOnClickListener(v -> {
-            animateClick(item);
-            if (index == selectedIndex) return;
         text.setGravity(Gravity.CENTER);
         text.setSingleLine(true);
 
@@ -140,7 +134,7 @@ public class BottomNav {
             }
 
             Intent intent = new Intent(activity, targetActivity);
-            
+
             // QUAN TRỌNG: Chuyển tiếp session để tránh lỗi dashboard
             String username = activity.getIntent().getStringExtra("USERNAME");
             String auth = activity.getIntent().getStringExtra("AUTH");
