@@ -14,11 +14,17 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.neith.subjectdemo.R;
+
 import com.neith.subjectdemo.admin.AdminActivityLogActivity;
 import com.neith.subjectdemo.admin.AdminDataActivity;
 import com.neith.subjectdemo.admin.AdminHomeActivity;
 import com.neith.subjectdemo.admin.AdminRoleActivity;
+
 import com.neith.subjectdemo.fn.FNActivity;
+import com.neith.subjectdemo.fn.ProjectRevenueActivity;
+import com.neith.subjectdemo.fn.ServiceRevenueActivity;
+import com.neith.subjectdemo.fn.TransportExpenseActivity;
+
 import com.neith.subjectdemo.hr.DepartmentActivity;
 import com.neith.subjectdemo.hr.EmployeeActivity;
 import com.neith.subjectdemo.hr.HRActivity;
@@ -26,6 +32,7 @@ import com.neith.subjectdemo.hr.ProjectActivity;
 import com.neith.subjectdemo.hr.WorkScheduleActivity;
 
 public class BottomNav {
+
 
     public static final int HOME = 0;
     public static final int EMPLOYEE = 1;
@@ -38,22 +45,19 @@ public class BottomNav {
     public static final int ADMIN_ACTIVITY_LOG = 102;
     public static final int ADMIN_DATA = 103;
     public static final int ADMIN_HR = 104;
-
     public static final int ADMIN_FN = 105;
+
+    public static final int FN_HOME = 200;
+    public static final int FN_PROJECT_REVENUE = 201;
+    public static final int FN_SERVICE_REVENUE = 202;
+    public static final int FN_TRANSPORT_EXPENSE = 203;
 
     public static void setup(Activity activity, LinearLayout container, int selectedIndex) {
         container.removeAllViews();
         container.setClipChildren(false);
         container.setClipToPadding(false);
 
-        // Xác định trang Home dựa trên quyền
-        String auth = activity.getSharedPreferences("LOGIN_CACHE", Context.MODE_PRIVATE).getString("AUTH", "");
-        Class<?> homeClass = HRActivity.class;
-        if (auth != null && auth.startsWith("FN")) {
-            homeClass = FNActivity.class;
-        }
-
-        addItem(activity, container, "Home", R.drawable.ic_home, HOME, selectedIndex, homeClass);
+        addItem(activity, container, "Home", R.drawable.ic_home, HOME, selectedIndex, HRActivity.class);
         addItem(activity, container, "Employee", R.drawable.ic_employee, EMPLOYEE, selectedIndex, EmployeeActivity.class);
         addItem(activity, container, "Department", R.drawable.ic_department, DEPARTMENT, selectedIndex, DepartmentActivity.class);
         addItem(activity, container, "Project", R.drawable.ic_project, PROJECT, selectedIndex, ProjectActivity.class);
@@ -69,8 +73,23 @@ public class BottomNav {
         addItem(activity, container, "Roles", R.drawable.ic_employee, ADMIN_ROLE, selectedIndex, AdminRoleActivity.class);
         addItem(activity, container, "Logs", R.drawable.ic_project, ADMIN_ACTIVITY_LOG, selectedIndex, AdminActivityLogActivity.class);
         addItem(activity, container, "Data", R.drawable.ic_db, ADMIN_DATA, selectedIndex, AdminDataActivity.class);
+
+        // Khi admin bấm sang HR thì màn HR biết là được mở từ admin
         addItem(activity, container, "HR", R.drawable.ic_work_schedule, ADMIN_HR, selectedIndex, HRActivity.class);
+
+        // Khi admin bấm sang Finance thì màn Finance biết là được mở từ admin
         addItem(activity, container, "Finance", R.drawable.ic_finance, ADMIN_FN, selectedIndex, FNActivity.class);
+    }
+
+    public static void setupFinance(Activity activity, LinearLayout container, int selectedIndex) {
+        container.removeAllViews();
+        container.setClipChildren(false);
+        container.setClipToPadding(false);
+
+        addItem(activity, container, "Home", R.drawable.ic_home, FN_HOME, selectedIndex, FNActivity.class);
+        addItem(activity, container, "Project Revenue", R.drawable.ic_project_revenue, FN_PROJECT_REVENUE, selectedIndex, ProjectRevenueActivity.class);
+        addItem(activity, container, "Service Revenue", R.drawable.ic_service_revenue, FN_SERVICE_REVENUE, selectedIndex, ServiceRevenueActivity.class);
+        addItem(activity, container, "Transport Expense", R.drawable.ic_transport_expense, FN_TRANSPORT_EXPENSE, selectedIndex, TransportExpenseActivity.class);
     }
 
     private static void addItem(Activity activity,
@@ -87,12 +106,18 @@ public class BottomNav {
         item.setOrientation(LinearLayout.VERTICAL);
         item.setGravity(Gravity.CENTER);
 
-        LinearLayout.LayoutParams itemLp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1);
+        LinearLayout.LayoutParams itemLp = new LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                1
+        );
         item.setLayoutParams(itemLp);
 
         FrameLayout iconHolder = new FrameLayout(activity);
+
         int holderSize = selected ? dp(activity, 46) : dp(activity, 34);
         LinearLayout.LayoutParams holderLp = new LinearLayout.LayoutParams(holderSize, holderSize);
+
         if (selected) {
             iconHolder.setBackgroundResource(R.drawable.bottom_nav_selected_bg);
             holderLp.topMargin = dp(activity, 2);
@@ -103,7 +128,10 @@ public class BottomNav {
         icon.setColorFilter(selected ? Color.BLACK : Color.WHITE);
         icon.setAlpha(selected ? 1f : 0.6f);
 
-        FrameLayout.LayoutParams iconLp = new FrameLayout.LayoutParams(dp(activity, selected ? 22 : 20), dp(activity, selected ? 22 : 20));
+        FrameLayout.LayoutParams iconLp = new FrameLayout.LayoutParams(
+                dp(activity, selected ? 22 : 20),
+                dp(activity, selected ? 22 : 20)
+        );
         iconLp.gravity = Gravity.CENTER;
 
         iconHolder.addView(icon, iconLp);
@@ -135,11 +163,32 @@ public class BottomNav {
 
             Intent intent = new Intent(activity, targetActivity);
 
-            // QUAN TRỌNG: Chuyển tiếp session để tránh lỗi dashboard
             String username = activity.getIntent().getStringExtra("USERNAME");
             String auth = activity.getIntent().getStringExtra("AUTH");
+
+            if (username == null || username.trim().isEmpty()) {
+                username = activity
+                        .getSharedPreferences("LOGIN_CACHE", Context.MODE_PRIVATE)
+                        .getString("USERNAME", "");
+            }
+
+            if (auth == null || auth.trim().isEmpty()) {
+                auth = activity
+                        .getSharedPreferences("LOGIN_CACHE", Context.MODE_PRIVATE)
+                        .getString("AUTH", "");
+            }
+
+            boolean fromAdmin = activity.getIntent().getBooleanExtra("FROM_ADMIN", false)
+                    || "admin".equalsIgnoreCase(auth)
+                    || index == ADMIN_HR
+                    || index == ADMIN_FN;
+
             intent.putExtra("USERNAME", username);
             intent.putExtra("AUTH", auth);
+
+            if (fromAdmin) {
+                intent.putExtra("FROM_ADMIN", true);
+            }
 
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             activity.startActivity(intent);
@@ -149,9 +198,19 @@ public class BottomNav {
     }
 
     private static void animateClick(View view) {
-        view.animate().scaleX(0.9f).scaleY(0.9f).setDuration(90).withEndAction(() -> 
-            view.animate().scaleX(1f).scaleY(1f).setInterpolator(new OvershootInterpolator()).setDuration(200).start()
-        ).start();
+        view.animate()
+                .scaleX(0.9f)
+                .scaleY(0.9f)
+                .setDuration(90)
+                .withEndAction(() ->
+                        view.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setInterpolator(new OvershootInterpolator())
+                                .setDuration(200)
+                                .start()
+                )
+                .start();
     }
 
     private static int dp(Activity activity, int value) {

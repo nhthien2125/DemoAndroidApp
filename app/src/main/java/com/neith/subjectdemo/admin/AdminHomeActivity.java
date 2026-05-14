@@ -18,7 +18,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.neith.subjectdemo.R;
 import com.neith.subjectdemo.helper.BottomNav;
 import com.neith.subjectdemo.helper.DB;
+import com.neith.subjectdemo.helper.SessionManager;
 
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -30,7 +32,7 @@ public class AdminHomeActivity extends AppCompatActivity {
     SQLiteDatabase db;
 
     EditText edtFrom, edtTo;
-    Button btnThongKe, btnReset, btnRefresh;
+    Button btnThongKe, btnReset, btnLogout;
     LinearLayout layoutList;
 
     final int TEXT = Color.parseColor("#E5E7EB");
@@ -55,12 +57,15 @@ public class AdminHomeActivity extends AppCompatActivity {
         edtTo = findViewById(R.id.edtTo);
         btnThongKe = findViewById(R.id.btnThongKe);
         btnReset = findViewById(R.id.btnResetAdminHome);
-        btnRefresh = findViewById(R.id.btnRefreshAdminHome);
+
+        // XML vẫn dùng id cũ btnRefreshAdminHome, nhưng chức năng giờ là Đăng xuất
+        btnLogout = findViewById(R.id.btnRefreshAdminHome);
+
         layoutList = findViewById(R.id.layoutAdminHomeList);
 
         btnThongKe.setBackgroundTintList(null);
         btnReset.setBackgroundTintList(null);
-        btnRefresh.setBackgroundTintList(null);
+        btnLogout.setBackgroundTintList(null);
 
         LinearLayout bottomNavContainer = findViewById(R.id.bottomNavContainer);
         BottomNav.setupAdmin(this, bottomNavContainer, BottomNav.ADMIN_HOME);
@@ -71,7 +76,8 @@ public class AdminHomeActivity extends AppCompatActivity {
         edtTo.setOnClickListener(v -> showDatePicker(edtTo));
 
         btnThongKe.setOnClickListener(v -> loadThongKe());
-        btnRefresh.setOnClickListener(v -> loadThongKe());
+
+        btnLogout.setOnClickListener(v -> SessionManager.logout(this));
 
         btnReset.setOnClickListener(v -> {
             setDefaultDateRange();
@@ -84,7 +90,10 @@ public class AdminHomeActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        loadThongKe();
+
+        if (db != null && db.isOpen()) {
+            loadThongKe();
+        }
     }
 
     private void setDefaultDateRange() {
@@ -98,6 +107,12 @@ public class AdminHomeActivity extends AppCompatActivity {
 
     private void showDatePicker(EditText edt) {
         Calendar calendar = Calendar.getInstance();
+
+        try {
+            calendar.setTime(dateFormat.parse(edt.getText().toString().trim()));
+        } catch (Exception ignored) {
+
+        }
 
         DatePickerDialog dialog = new DatePickerDialog(
                 this,
@@ -387,7 +402,7 @@ public class AdminHomeActivity extends AppCompatActivity {
                     box.addView(makeSmallLine("Phòng ban hiện tại", emptyText(emp.departmentCode) + " • " + emptyText(emp.departmentName)));
                     box.addView(makeSmallLine("Mã trưởng phòng", emptyText(emp.managerCode)));
                     box.addView(makeSmallLine("Địa điểm phòng ban", emptyText(emp.departmentLocation)));
-                    box.addView(makeSmallLine("Chức vụ hiện tại", emptyText(emp.positionCode) + " • " + emptyText(emp.positionName)));
+                    box.addView(makeSmallLine("Chức vụ sau khi thăng chức", emptyText(emp.positionCode) + " • " + emptyText(emp.positionName)));
                     box.addView(makeSmallLine("Hệ số lương chức vụ", emptyText(emp.salaryCoefficient)));
                 }
 
@@ -449,11 +464,28 @@ public class AdminHomeActivity extends AppCompatActivity {
         card.addView(makeCardTitle("4. DỰ ÁN / HỢP ĐỒNG BẮT ĐẦU TRONG KHOẢNG LỌC"));
 
         Cursor c = db.rawQuery(
-                "SELECT MAHD, IFNULL(TENHD, ''), IFNULL(LOAI, ''), " +
-                        "IFNULL(NGAYBD, ''), IFNULL(NGAYKT_DUTINH, '') " +
-                        "FROM HOPDONG " +
-                        "WHERE NGAYBD BETWEEN ? AND ? " +
-                        "ORDER BY NGAYBD DESC",
+                "SELECT HD.MAHD, " +
+                        "IFNULL(HD.TENHD, ''), " +
+                        "IFNULL(HD.LOAI, ''), " +
+                        "IFNULL(HD.NGAYBD, ''), " +
+                        "IFNULL(HD.NGAYKT_DUTINH, ''), " +
+                        "IFNULL(DTHD.MADAHD, ''), " +
+                        "IFNULL(DTHD.MADA, ''), " +
+                        "IFNULL(DTHD.NGAYKT, ''), " +
+                        "IFNULL(DA.MAKH, ''), " +
+                        "IFNULL(DA.TIENCOC, 0), " +
+                        "IFNULL(DA.TIENNGHIEMTHU_DUTINH, 0), " +
+                        "IFNULL(DT.TIENNGHIEMTHU_TONG, 0), " +
+                        "IFNULL(DT.MALH, ''), " +
+                        "IFNULL(DT.MAKV, ''), " +
+                        "IFNULL(DT.MARR, ''), " +
+                        "IFNULL(DT.HSTHAYDOI, 0) " +
+                        "FROM HOPDONG HD " +
+                        "LEFT JOIN DUANTHEOHOPDONG DTHD ON HD.MAHD = DTHD.MAHD " +
+                        "LEFT JOIN DUAN DA ON DTHD.MADA = DA.MADA " +
+                        "LEFT JOIN DTDUAN DT ON DTHD.MADA = DT.MADA " +
+                        "WHERE HD.NGAYBD BETWEEN ? AND ? " +
+                        "ORDER BY HD.NGAYBD DESC",
                 new String[]{from, to}
         );
 
@@ -465,14 +497,42 @@ public class AdminHomeActivity extends AppCompatActivity {
                 String tenHD = c.getString(1);
                 String loai = c.getString(2);
                 String ngayBD = c.getString(3);
-                String ngayKT = c.getString(4);
+                String ngayKTduTinh = c.getString(4);
+                String maDAHD = c.getString(5);
+                String maDA = c.getString(6);
+                String ngayKTThucTe = c.getString(7);
+                String maKH = c.getString(8);
+
+                double tienCoc = c.getDouble(9);
+                double tienNghiemThuDuTinh = c.getDouble(10);
+                double tienNghiemThuTong = c.getDouble(11);
+
+                String maLoaiHinh = c.getString(12);
+                String maKhuVuc = c.getString(13);
+                String maRuiRo = c.getString(14);
+                double heSoThayDoi = c.getDouble(15);
 
                 LinearLayout box = makeInnerBox();
 
                 box.addView(makeText(maHD + " • " + emptyText(tenHD), 15, PRIMARY, true));
+
                 box.addView(makeSmallLine("Loại hợp đồng", emptyText(loai)));
                 box.addView(makeSmallLine("Ngày bắt đầu", emptyText(ngayBD)));
-                box.addView(makeSmallLine("Ngày kết thúc dự tính", emptyText(ngayKT)));
+                box.addView(makeSmallLine("Ngày kết thúc dự tính", emptyText(ngayKTduTinh)));
+
+                box.addView(makeSmallLine("Mã dự án hợp đồng", emptyText(maDAHD)));
+                box.addView(makeSmallLine("Mã dự án", emptyText(maDA)));
+                box.addView(makeSmallLine("Ngày kết thúc thực tế", emptyText(ngayKTThucTe)));
+                box.addView(makeSmallLine("Mã khách hàng", emptyText(maKH)));
+
+                box.addView(makeSmallLine("Tiền cọc", formatCurrencyFull(tienCoc)));
+                box.addView(makeSmallLine("Nghiệm thu dự tính", formatCurrencyFull(tienNghiemThuDuTinh)));
+                box.addView(makeSmallLine("Nghiệm thu tổng", formatCurrencyFull(tienNghiemThuTong)));
+
+                box.addView(makeSmallLine("Mã loại hình", emptyText(maLoaiHinh)));
+                box.addView(makeSmallLine("Mã khu vực", emptyText(maKhuVuc)));
+                box.addView(makeSmallLine("Mã rủi ro", emptyText(maRuiRo)));
+                box.addView(makeSmallLine("Hệ số thay đổi", formatNumber(heSoThayDoi)));
 
                 card.addView(box);
             }
@@ -714,7 +774,11 @@ public class AdminHomeActivity extends AppCompatActivity {
     }
 
     private String formatNumber(double value) {
-        return String.format(Locale.getDefault(), "%,.0f", value);
+        return String.format(Locale.getDefault(), "%,.2f", value);
+    }
+
+    private String formatCurrencyFull(double amount) {
+        return NumberFormat.getCurrencyInstance(Locale.US).format(amount);
     }
 
     private int dp(int value) {

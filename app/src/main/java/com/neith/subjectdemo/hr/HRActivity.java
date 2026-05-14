@@ -18,7 +18,9 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.neith.subjectdemo.R;
+import com.neith.subjectdemo.admin.AdminHomeActivity;
 import com.neith.subjectdemo.auth.SignIn;
+import com.neith.subjectdemo.helper.BottomNav;
 import com.neith.subjectdemo.helper.DB;
 import com.neith.subjectdemo.helper.SessionManager;
 
@@ -26,11 +28,15 @@ import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import com.neith.subjectdemo.helper.BottomNav;
+
 public class HRActivity extends AppCompatActivity {
 
     SQLiteDatabase db;
     LinearLayout layoutContent;
+
+    String username = "";
+    String auth = "";
+    boolean openedFromAdmin = false;
 
     final int BG = Color.parseColor("#0F172A");
     final int CARD = Color.parseColor("#303030");
@@ -47,8 +53,24 @@ public class HRActivity extends AppCompatActivity {
 
         db = DB.openDatabase(this);
         layoutContent = findViewById(R.id.layoutContent);
+
+        username = getIntent().getStringExtra("USERNAME");
+        auth = getIntent().getStringExtra("AUTH");
+
+        if (username == null || username.trim().isEmpty()) {
+            username = getSharedPreferences("LOGIN_CACHE", MODE_PRIVATE).getString("USERNAME", "");
+        }
+
+        if (auth == null || auth.trim().isEmpty()) {
+            auth = getSharedPreferences("LOGIN_CACHE", MODE_PRIVATE).getString("AUTH", "");
+        }
+
+        openedFromAdmin = getIntent().getBooleanExtra("FROM_ADMIN", false)
+                || "admin".equalsIgnoreCase(auth);
+
         LinearLayout bottomNavContainer = findViewById(R.id.bottomNavContainer);
         BottomNav.setup(this, bottomNavContainer, BottomNav.HOME);
+
         loadDashboard();
     }
 
@@ -69,6 +91,41 @@ public class HRActivity extends AppCompatActivity {
         titleBox.addView(title);
         titleBox.addView(subtitle);
 
+        topBar.addView(titleBox, new LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1
+        ));
+
+        if (openedFromAdmin) {
+            Button btnBackAdmin = new Button(this);
+            btnBackAdmin.setText("Về Admin");
+            btnBackAdmin.setTextColor(Color.WHITE);
+            btnBackAdmin.setTextSize(12);
+            btnBackAdmin.setTypeface(null, Typeface.BOLD);
+            btnBackAdmin.setAllCaps(false);
+            btnBackAdmin.setBackgroundTintList(null);
+            btnBackAdmin.setBackgroundResource(R.drawable.employee_button_dark_bg);
+            btnBackAdmin.setPadding(dp(10), 0, dp(10), 0);
+
+            btnBackAdmin.setOnClickListener(v -> {
+                Intent intent = new Intent(HRActivity.this, AdminHomeActivity.class);
+                intent.putExtra("USERNAME", username);
+                intent.putExtra("AUTH", auth);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(intent);
+                finish();
+            });
+
+            LinearLayout.LayoutParams backLp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    dp(44)
+            );
+            backLp.setMargins(0, 0, dp(8), 0);
+
+            topBar.addView(btnBackAdmin, backLp);
+        }
+
         Button btnLogout = new Button(this);
         btnLogout.setText("Đăng xuất");
         btnLogout.setTextColor(Color.BLACK);
@@ -80,12 +137,6 @@ public class HRActivity extends AppCompatActivity {
         btnLogout.setPadding(dp(12), 0, dp(12), 0);
 
         btnLogout.setOnClickListener(v -> logout());
-
-        topBar.addView(titleBox, new LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1
-        ));
 
         topBar.addView(btnLogout, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
